@@ -228,9 +228,6 @@ export default function NegotiatePage() {
           >
             ← Setup Arena
           </button>
-          <span className={styles.sessionId}>
-            Session: {sessionId.slice(0, 8)}
-          </span>
         </div>
 
         <div className={styles.headerCenter}>
