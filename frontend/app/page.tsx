@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import MoltenMetal from "@/components/MoltenMetal";
 import "./landing.css";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -753,8 +754,30 @@ function MasterFooter() {
 export default function LandingPage() {
   return (
     <div className="lp">
-      {/* Static Ambient Scene (Zero GPU repaint overhead) */}
-      <div className="ambient-scene" aria-hidden="true" />
+      {/* ── Molten Metal WebGL Background (Atmospheric Shader behind Bento & Flow Grid) ── */}
+      <div className="lp-molten-bg">
+        <MoltenMetal
+          color1="#00FFFF"
+          color2="#A855F7"
+          color3="#FF00FF"
+          speed={0.25}
+          scale={3.6}
+          detail={3}
+          glow={2.0}
+          coreSize={0.14}
+          swirl={0.9}
+          fold={-0.2}
+          blackPoint={0.03}
+          brightness={1.6}
+          colorMode="molten"
+          grain={true}
+          grainIntensity={0.03}
+          mouseInteraction={true}
+          mouseStrength={0.25}
+          opacity={0.88}
+        />
+        <div className="lp-molten-vignette" />
+      </div>
 
       {/* Navigation */}
       <Navbar />

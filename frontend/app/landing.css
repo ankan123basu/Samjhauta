@@ -59,18 +59,24 @@ body:has(.lp) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   STATIC AMBIENT LIGHT (NO BLUR FILTERS, ZERO GPU PAINT OVERHEAD)
+   MOLTEN METAL WEBGL BACKGROUND (BEHIND LOWER SECTIONS)
    ═══════════════════════════════════════════════════════════════════════════ */
-.ambient-scene {
+.lp-molten-bg {
   position: fixed;
   inset: 0;
-  pointer-events: none;
+  width: 100vw;
+  height: 100vh;
   z-index: 0;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 60% 50% at 15% 15%, rgba(0, 255, 255, 0.08), transparent 70%),
-    radial-gradient(ellipse 55% 55% at 85% 85%, rgba(255, 0, 255, 0.07), transparent 70%),
-    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(168, 85, 247, 0.04), transparent 70%);
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.lp-molten-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(6,6,8,0.08) 0%, rgba(6,6,8,0.45) 70%, rgba(6,6,8,0.85) 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
