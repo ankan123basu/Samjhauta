@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MoltenMetal from "@/components/MoltenMetal";
+import { SUPPORTED_LANGUAGES, processTransliteration } from "@/lib/transliterate";
+import { SETUP_LOCALIZATIONS, type SetupI18n } from "@/lib/i18nSetup";
 import styles from "./page.module.css";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -17,48 +19,34 @@ interface BriefForm {
   private_context: string;
   dispute_topic: string;
   unit_label: string;
+  language: string;
 }
 
-const DEFAULT_TOPIC = "cost split for shared appliance repair";
-const DEFAULT_UNIT = "%";
-
 const defaultBriefA: BriefForm = {
-  name: "Arjun",
+  name: SETUP_LOCALIZATIONS["en"].briefA.name,
   initial_position: 30,
   floor: 25,
   ceiling: 50,
   tone: "assertive",
   strategy: "boulware",
-  private_context:
-    "I didn't break it. We both used the washing machine equally and shared the risk. A 50/50 split feels unjust given I wasn't even home when it broke.",
-  dispute_topic: DEFAULT_TOPIC,
-  unit_label: DEFAULT_UNIT,
+  private_context: SETUP_LOCALIZATIONS["en"].briefA.context,
+  dispute_topic: SETUP_LOCALIZATIONS["en"].briefA.topic,
+  unit_label: "%",
+  language: "English",
 };
 
 const defaultBriefB: BriefForm = {
-  name: "Priya",
+  name: SETUP_LOCALIZATIONS["en"].briefB.name,
   initial_position: 70,
   floor: 45,
   ceiling: 75,
   tone: "cooperative",
   strategy: "conceder",
-  private_context:
-    "I know the timing looked bad but it wasn't entirely my fault. I want this resolved — living with this tension is worse than paying a bit more. I'm willing to be flexible.",
-  dispute_topic: DEFAULT_TOPIC,
-  unit_label: DEFAULT_UNIT,
+  private_context: SETUP_LOCALIZATIONS["en"].briefB.context,
+  dispute_topic: SETUP_LOCALIZATIONS["en"].briefB.topic,
+  unit_label: "%",
+  language: "English",
 };
-
-const TONE_OPTIONS = [
-  { value: "cooperative", label: "🤝 Cooperative — I want to find common ground" },
-  { value: "assertive", label: "💪 Assertive — I'll push but stay fair" },
-  { value: "firm", label: "🧱 Firm — I know what I want and I'll hold it" },
-];
-
-const STRATEGY_OPTIONS = [
-  { value: "boulware", label: "🧊 Boulware — Hold position, concede late" },
-  { value: "conceder", label: "🌊 Conceder — Move early, reach deal fast" },
-  { value: "linear", label: "📏 Linear — Constant, steady concessions" },
-];
 
 // ── Custom Glass Dropdown Component ──────────────────────────────────────────
 
@@ -98,7 +86,7 @@ function CustomGlassSelect({
         data-open={isOpen}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>{selected.label}</span>
+        <span>{selected?.label || value}</span>
         <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{isOpen ? "▲" : "▼"}</span>
       </button>
 
@@ -136,12 +124,18 @@ function OfferRangeGauge({
   opening,
   unit,
   agentId,
+  floorLabel,
+  openingLabel,
+  ceilingLabel,
 }: {
   floor: number;
   ceiling: number;
   opening: number;
   unit: string;
   agentId: "A" | "B";
+  floorLabel: string;
+  openingLabel: string;
+  ceilingLabel: string;
 }) {
   const minVal = Math.min(floor, ceiling, opening, 0);
   const maxVal = Math.max(floor, ceiling, opening, 100);
@@ -156,11 +150,11 @@ function OfferRangeGauge({
   return (
     <div className={styles.rangeGaugeContainer}>
       <div className={styles.rangeGaugeHeader}>
-        <span>Floor: {floor}{unit}</span>
+        <span>{floorLabel}: {floor}{unit}</span>
         <span style={{ color: agentId === "A" ? "#00FFFF" : "#FF00FF", fontWeight: 700 }}>
-          Opening: {opening}{unit}
+          {openingLabel}: {opening}{unit}
         </span>
-        <span>Ceiling: {ceiling}{unit}</span>
+        <span>{ceilingLabel}: {ceiling}{unit}</span>
       </div>
 
       <div className={styles.rangeTrack}>
@@ -179,7 +173,7 @@ function OfferRangeGauge({
             agentId === "A" ? styles.rangeMarkerA : styles.rangeMarkerB
           }`}
           style={{ left: `${openingPct}%` }}
-          title={`Opening Offer: ${opening}${unit}`}
+          title={`Offer: ${opening}${unit}`}
         />
       </div>
     </div>
@@ -191,17 +185,38 @@ function OfferRangeGauge({
 function BriefPanel({
   agentId,
   brief,
+  selectedLangCode,
   onChange,
+  onLanguageChange,
 }: {
   agentId: "A" | "B";
   brief: BriefForm;
+  selectedLangCode: string;
   onChange: (b: BriefForm) => void;
+  onLanguageChange: (code: string) => void;
 }) {
+  const [translitOn, setTranslitOn] = useState<boolean>(true);
+
+  // Derive localized strings for this panel
+  const i18n = SETUP_LOCALIZATIONS[selectedLangCode] || SETUP_LOCALIZATIONS["en"];
+
   const upd = (field: keyof BriefForm, value: string | number) =>
     onChange({ ...brief, [field]: value });
 
+  const handleLangSelect = (code: string) => {
+    onLanguageChange(code);
+  };
+
+  const handleTranslitText = async (field: keyof BriefForm, val: string) => {
+    if (translitOn && selectedLangCode !== "en") {
+      await processTransliteration(val, selectedLangCode, (newVal) => upd(field, newVal));
+    } else {
+      upd(field, val);
+    }
+  };
+
   const modelBadge =
-    agentId === "A" ? "GROQ LLAMA 3.3 70B" : "GEMINI 2.0 FLASH";
+    agentId === "A" ? "GROQ · LLAMA 3.3 70B" : "GEMINI · 2.5 FLASH";
 
   // Dynamic character count color class
   const len = brief.private_context.length;
@@ -230,10 +245,8 @@ function BriefPanel({
               >
                 AGENT {agentId} · {modelBadge}
               </div>
-              <h2 className={styles.panelTitle}>Your Private Brief</h2>
-              <p className={styles.panelSubtitle}>
-                Only your agent sees this. Be honest — it stays private.
-              </p>
+              <h2 className={styles.panelTitle}>{i18n.panelTitle}</h2>
+              <p className={styles.panelSubtitle}>{i18n.panelSubtitle}</p>
             </div>
 
             {/* Alive Orb Avatar */}
@@ -246,10 +259,61 @@ function BriefPanel({
             </div>
           </div>
 
+          {/* Multilingual Typing & Auto-Refill Toolbar */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, background: "rgba(255,255,255,0.04)", padding: "8px 12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.12)" }}>
+            <span style={{ fontSize: "0.74rem", color: "#00FFFF", fontFamily: "JetBrains Mono, monospace", fontWeight: 800 }}>
+              🌐 Language & Script:
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <select
+                value={selectedLangCode}
+                onChange={(e) => handleLangSelect(e.target.value)}
+                style={{
+                  background: "rgba(0,0,0,0.7)",
+                  color: agentId === "A" ? "#00FFFF" : "#FF00FF",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  borderRadius: 6,
+                  fontSize: "0.78rem",
+                  fontWeight: 800,
+                  padding: "4px 10px",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+                title="Select language to auto-fill fields and have agent speak in this language"
+              >
+                {SUPPORTED_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code} style={{ background: "#121218", color: "#fff" }}>
+                    {l.name} ({l.native})
+                  </option>
+                ))}
+              </select>
+
+              {selectedLangCode !== "en" && (
+                <button
+                  type="button"
+                  onClick={() => setTranslitOn(!translitOn)}
+                  style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    background: translitOn ? "rgba(255,225,86,0.15)" : "rgba(255,255,255,0.05)",
+                    color: translitOn ? "#FFE156" : "#9e9ea8",
+                    border: translitOn ? "1px solid rgba(255,225,86,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                    cursor: "pointer",
+                  }}
+                  title="Phonetic transliteration on space (e.g. 'samjhauta ' -> 'समझौता ')"
+                >
+                  🔤 Transliteration: {translitOn ? "ON" : "OFF"}
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Name */}
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor={`name-${agentId}`}>
-              Your Name
+              {i18n.nameLabel}
             </label>
             <input
               id={`name-${agentId}`}
@@ -257,7 +321,7 @@ function BriefPanel({
                 agentId === "A" ? styles.inputA : styles.inputB
               }`}
               value={brief.name}
-              onChange={(e) => upd("name", e.target.value)}
+              onChange={(e) => handleTranslitText("name", e.target.value)}
               placeholder="First name"
             />
           </div>
@@ -265,7 +329,7 @@ function BriefPanel({
           {/* Topic */}
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor={`topic-${agentId}`}>
-              What you're negotiating
+              {i18n.topicLabel}
             </label>
             <input
               id={`topic-${agentId}`}
@@ -273,14 +337,14 @@ function BriefPanel({
                 agentId === "A" ? styles.inputA : styles.inputB
               }`}
               value={brief.dispute_topic}
-              onChange={(e) => upd("dispute_topic", e.target.value)}
+              onChange={(e) => handleTranslitText("dispute_topic", e.target.value)}
             />
           </div>
 
           {/* Unit label */}
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor={`unit-${agentId}`}>
-              Unit (%, ₹, days…)
+              {i18n.unitLabel}
             </label>
             <input
               id={`unit-${agentId}`}
@@ -297,7 +361,7 @@ function BriefPanel({
           <div className={styles.threeCol}>
             <div className={styles.fieldGroup}>
               <label className={styles.label} htmlFor={`pos-${agentId}`}>
-                Opening Offer
+                {i18n.openingLabel}
               </label>
               <input
                 id={`pos-${agentId}`}
@@ -312,7 +376,7 @@ function BriefPanel({
             </div>
             <div className={styles.fieldGroup}>
               <label className={styles.label} htmlFor={`floor-${agentId}`}>
-                Floor (walk-away)
+                {i18n.floorLabel}
               </label>
               <input
                 id={`floor-${agentId}`}
@@ -327,7 +391,7 @@ function BriefPanel({
             </div>
             <div className={styles.fieldGroup}>
               <label className={styles.label} htmlFor={`ceil-${agentId}`}>
-                Ceiling (best case)
+                {i18n.ceilingLabel}
               </label>
               <input
                 id={`ceil-${agentId}`}
@@ -349,14 +413,17 @@ function BriefPanel({
             opening={brief.initial_position}
             unit={brief.unit_label}
             agentId={agentId}
+            floorLabel={i18n.floorLabel}
+            openingLabel={i18n.openingLabel}
+            ceilingLabel={i18n.ceilingLabel}
           />
 
           {/* Tone (Custom Glass Dropdown) */}
           <div className={styles.fieldGroup}>
-            <label className={styles.label}>Your Tone</label>
+            <label className={styles.label}>{i18n.toneLabel}</label>
             <CustomGlassSelect
               value={brief.tone}
-              options={TONE_OPTIONS}
+              options={i18n.tones}
               onChange={(val) => upd("tone", val as BriefForm["tone"])}
               agentId={agentId}
             />
@@ -364,10 +431,10 @@ function BriefPanel({
 
           {/* Strategy (Custom Glass Dropdown) */}
           <div className={styles.fieldGroup}>
-            <label className={styles.label}>Concession Strategy</label>
+            <label className={styles.label}>{i18n.strategyLabel}</label>
             <CustomGlassSelect
               value={brief.strategy}
-              options={STRATEGY_OPTIONS}
+              options={i18n.strategies}
               onChange={(val) => upd("strategy", val as BriefForm["strategy"])}
               agentId={agentId}
             />
@@ -376,9 +443,9 @@ function BriefPanel({
           {/* Private context */}
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor={`ctx-${agentId}`}>
-              Private Context{" "}
+              {i18n.contextLabel}{" "}
               <span style={{ fontWeight: 400, opacity: 0.6 }}>
-                (why you feel this way — only your agent sees this)
+                {i18n.contextHint}
               </span>
             </label>
             <div className={styles.textareaContainer}>
@@ -390,8 +457,8 @@ function BriefPanel({
                 style={{ minHeight: 90, resize: "vertical", fontFamily: "inherit", paddingBottom: "28px" }}
                 value={brief.private_context}
                 maxLength={500}
-                onChange={(e) => upd("private_context", e.target.value)}
-                placeholder="What matters to you and why? The more honest, the better your agent negotiates."
+                onChange={(e) => handleTranslitText("private_context", e.target.value)}
+                placeholder={i18n.contextPlaceholder}
               />
               <div className={`${styles.charCountPill} ${charClass}`}>
                 {brief.private_context.length}/500
@@ -408,10 +475,13 @@ function BriefPanel({
 
 export default function SetupPage() {
   const router = useRouter();
+  const [globalLang, setGlobalLang] = useState<string>("en");
   const [briefA, setBriefA] = useState<BriefForm>(defaultBriefA);
   const [briefB, setBriefB] = useState<BriefForm>(defaultBriefB);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const globalI18n = SETUP_LOCALIZATIONS[globalLang] || SETUP_LOCALIZATIONS["en"];
 
   // Calculate live ZOPA (Zone of Possible Agreement)
   const minA = Math.min(briefA.floor, briefA.ceiling);
@@ -423,6 +493,30 @@ export default function SetupPage() {
   const overlapEnd = Math.min(maxA, maxB);
   const hasOverlap = overlapStart <= overlapEnd;
 
+  const handleGlobalLanguageChange = (code: string) => {
+    setGlobalLang(code);
+    const langObj = SUPPORTED_LANGUAGES.find((l) => l.code === code) || SUPPORTED_LANGUAGES[0];
+    const loc = SETUP_LOCALIZATIONS[code] || SETUP_LOCALIZATIONS["en"];
+
+    setBriefA((prev) => ({
+      ...prev,
+      language: langObj.name,
+      name: loc.briefA.name,
+      dispute_topic: loc.briefA.topic,
+      private_context: loc.briefA.context,
+      unit_label: loc.briefA.unit || "%",
+    }));
+
+    setBriefB((prev) => ({
+      ...prev,
+      language: langObj.name,
+      name: loc.briefB.name,
+      dispute_topic: loc.briefB.topic,
+      private_context: loc.briefB.context,
+      unit_label: loc.briefB.unit || "%",
+    }));
+  };
+
   const handleStart = async () => {
     setLoading(true);
     setError(null);
@@ -431,8 +525,8 @@ export default function SetupPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          brief_a: { ...briefA, agent_id: "A" },
-          brief_b: { ...briefB, agent_id: "B" },
+          brief_a: { ...briefA, agent_id: "A", language: briefA.language || "English" },
+          brief_b: { ...briefB, agent_id: "B", language: briefB.language || "English" },
         }),
       });
       if (!res.ok) {
@@ -479,14 +573,12 @@ export default function SetupPage() {
         <div className={styles.headerInner}>
           <div>
             <a href="/" className={styles.backLink}>
-              ← Back to Overview
+              {globalI18n.backLink}
             </a>
             <h1 className={styles.title}>
-              Setup <span className={styles.titleGrad}>Negotiation Arena</span>
+              {globalI18n.title} <span className={styles.titleGrad}>{globalI18n.titleHighlight}</span>
             </h1>
-            <p className={styles.tagline}>
-              Two independent foundation models. One dispute. Zero fake agreements.
-            </p>
+            <p className={styles.tagline}>{globalI18n.tagline}</p>
           </div>
         </div>
 
@@ -494,11 +586,40 @@ export default function SetupPage() {
         <div className={styles.scenarioBox}>
           <span className={styles.scenarioEmoji}>🏠</span>
           <div>
-            <strong>The Scenario:</strong> Two flatmates. A broken washing machine.
-            One thinks it's 50/50. The other thinks whoever broke it pays more.
-            Neither wants to be the first to bring it up.{" "}
-            <em style={{ color: "#00FFFF" }}>Their AI agents are going to have the conversation for them.</em>
+            <strong>{globalI18n.scenarioTitle}</strong> {globalI18n.scenarioText}
           </div>
+        </div>
+
+        {/* 🌐 Global Language Switcher Toolbar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, margin: "16px auto 0", maxWidth: 600, background: "rgba(0, 255, 255, 0.06)", border: "1px solid rgba(0, 255, 255, 0.25)", borderRadius: 12, padding: "10px 18px" }}>
+          <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#00FFFF", display: "flex", alignItems: "center", gap: 6 }}>
+            🌐 Negotiation Language:
+          </span>
+          <select
+            id="global-language-select"
+            value={globalLang}
+            onChange={(e) => handleGlobalLanguageChange(e.target.value)}
+            style={{
+              background: "#0d0d14",
+              color: "#00FFFF",
+              border: "1px solid rgba(0, 255, 255, 0.4)",
+              borderRadius: 8,
+              fontSize: "0.86rem",
+              fontWeight: 800,
+              padding: "6px 14px",
+              cursor: "pointer",
+              outline: "none",
+            }}
+          >
+            {SUPPORTED_LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code} style={{ background: "#121218", color: "#fff" }}>
+                {l.name} ({l.native})
+              </option>
+            ))}
+          </select>
+          <span style={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.6)" }}>
+            ⚡ Auto-refills all brief fields in native script
+          </span>
         </div>
       </header>
 
@@ -508,7 +629,9 @@ export default function SetupPage() {
           <BriefPanel
             agentId="A"
             brief={briefA}
+            selectedLangCode={globalLang}
             onChange={setBriefA}
+            onLanguageChange={handleGlobalLanguageChange}
           />
 
           <div className={styles.vsColumn}>
@@ -524,12 +647,12 @@ export default function SetupPage() {
                   hasOverlap ? styles.zopaStatusOverlap : styles.zopaStatusDeadlock
                 }`}
               >
-                {hasOverlap ? "● ZOPA Detected" : "▲ No Overlap"}
+                {hasOverlap ? globalI18n.zopaDetected : globalI18n.noOverlap}
               </span>
               <span className={styles.zopaRange}>
                 {hasOverlap
                   ? `${overlapStart}% – ${overlapEnd}%`
-                  : `Gap: ${overlapStart - overlapEnd}%`}
+                  : `${globalI18n.gapText}: ${overlapStart - overlapEnd}%`}
               </span>
             </div>
           </div>
@@ -537,7 +660,9 @@ export default function SetupPage() {
           <BriefPanel
             agentId="B"
             brief={briefB}
+            selectedLangCode={globalLang}
             onChange={setBriefB}
+            onLanguageChange={handleGlobalLanguageChange}
           />
         </div>
 
@@ -578,7 +703,7 @@ export default function SetupPage() {
                   AGENT A
                 </span>
               </div>
-              <p className={styles.archDesc}>Groq Llama 3.3 70B reasons from your brief and generates adversarial turns.</p>
+              <p className={styles.archDesc}>Groq Llama 3.3 70B Versatile reasons from your brief and generates adversarial turns in your chosen language.</p>
             </div>
 
             <div className={styles.archCard}>
@@ -588,7 +713,7 @@ export default function SetupPage() {
                   AGENT B
                 </span>
               </div>
-              <p className={styles.archDesc}>Google Gemini 2.0 Flash — a genuinely different foundation model — does the same for the other human.</p>
+              <p className={styles.archDesc}>Google Gemini 2.5 Flash — a genuinely different provider and architecture — does the same for the other human.</p>
             </div>
 
             <div className={styles.archCard}>

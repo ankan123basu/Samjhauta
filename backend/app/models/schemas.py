@@ -101,6 +101,12 @@ class HumanBrief(BaseModel):
         description="Unit for offers, e.g. '%', '₹', 'minutes'",
     )
 
+    # Language for this agent (e.g. 'Hindi', 'Bengali', 'Tamil', 'English')
+    language: str = Field(
+        default="English",
+        description="Language the human and agent communicate in, e.g. 'Hindi', 'Bengali', 'Tamil', 'English'",
+    )
+
     @model_validator(mode="after")
     def validate_limits(self) -> HumanBrief:
         # Auto-swap if the user entered floor > ceiling (common when

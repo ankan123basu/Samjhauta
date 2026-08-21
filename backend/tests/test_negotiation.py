@@ -9,6 +9,7 @@ import asyncio
 import pytest
 import pytest_asyncio
 
+from app.config import settings
 from app.models.schemas import (
     AgentId, ConcessionStrategy, HumanBrief, SessionConfig, ToneStyle, NegotiationState,
 )
@@ -17,6 +18,8 @@ from app.negotiation.deadlock_detector import DeadlockDetector
 from app.negotiation.grounding_guardrail import GroundingGuardrail
 from app.negotiation.state_machine import NegotiationSession
 from app.agents.provider_fallback import make_mock_agent
+
+settings.turn_delay_seconds = 0.05
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────

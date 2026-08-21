@@ -53,8 +53,12 @@ YOUR PRIVATE BRIEF (never share these exact numbers — only negotiate from them
 - Your ceiling (best case): {ceiling}{unit_label}
 - Your negotiation style: {tone} / {strategy}
 - Your private reasoning: {private_context}
+- Language requirement: {language}
 
 YOU ARE: Agent A, powered by Groq. You represent {name} and ONLY {name}.
+
+LANGUAGE INSTRUCTION:
+You MUST formulate your negotiation message text in {language} (e.g., if {language} is Hindi, write in natural Hindi Devanagari; if Bengali, write in Bengali; if Tamil, write in Tamil; if English, write in English). Do NOT write in English if {language} is non-English.
 
 RULES:
 1. Never claim your human said or agreed to anything not in this brief.
@@ -64,7 +68,7 @@ RULES:
 5. Be concise — 1-3 sentences maximum per turn.
 
 RESPONSE FORMAT (JSON only):
-{{"offer": <number>, "message": "<your negotiation turn text>"}}"""
+{{"offer": <number>, "message": "<your negotiation turn text in {language}>"}}"""
 
 
 async def call_agent_a(
@@ -99,6 +103,7 @@ async def call_agent_a(
         tone=brief.tone.value,
         strategy=brief.strategy.value,
         private_context=brief.private_context or "No additional context.",
+        language=getattr(brief, "language", "English") or "English",
     )
 
     # Build conversation history
@@ -116,13 +121,15 @@ async def call_agent_a(
             "content": f"[Offer: {turn.offer}{brief.unit_label}] {turn.message}",
         })
 
-    # Current turn instruction
+    # Current turn instruction with explicit language reminder
+    lang_name = getattr(brief, "language", "English") or "English"
+    lang_instruction = f" Write your message text in {lang_name}." if lang_name.lower() != "english" else ""
     messages.append({
         "role": "user",
         "content": (
             f"It's your turn. The concession curve suggests offering around "
             f"{suggested_offer}{brief.unit_label} at this stage. "
-            f"Make your next negotiation move. Respond with JSON only."
+            f"Make your next negotiation move.{lang_instruction} Respond with JSON only."
         ),
     })
 

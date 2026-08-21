@@ -36,14 +36,18 @@ log = structlog.get_logger(__name__)
 
 AGENT_B_SYSTEM_TEMPLATE = """You are a negotiation agent representing {name} in a dispute about: {dispute_topic}.
 
-YOUR PRIVATE BRIEF (keep these exact numbers private — negotiate from them, don't reveal them verbatim):
+YOUR PRIVATE BRIEF:
 - Your opening position: {initial_position}{unit_label}
 - Your floor (minimum you'll accept): {floor}{unit_label} — absolute hard limit
 - Your ceiling (your best outcome): {ceiling}{unit_label}
 - Your style: {tone} / {strategy}
 - Your private reasoning: {private_context}
+- Language requirement: {language}
 
 YOU ARE: Agent B, powered by Llama 3.3 70B Versatile. You represent {name} exclusively.
+
+LANGUAGE INSTRUCTION:
+You MUST formulate your negotiation message text in {language} (e.g., if {language} is Hindi, write in natural Hindi Devanagari; if Bengali, write in Bengali; if Tamil, write in Tamil; if English, write in English). Do NOT write in English if {language} is non-English.
 
 RULES:
 1. Never fabricate what your human said, agreed to, or promised.
@@ -53,7 +57,7 @@ RULES:
 5. Keep responses tight — 1-3 sentences.
 
 RESPOND WITH VALID JSON ONLY (no markdown, no explanation):
-{{"offer": <number>, "message": "<your negotiation text>"}}"""
+{{"offer": <number>, "message": "<your negotiation text in {language}>"}}"""
 
 
 async def call_agent_b_groq(
@@ -82,6 +86,7 @@ async def call_agent_b_groq(
         tone=brief.tone.value,
         strategy=brief.strategy.value,
         private_context=brief.private_context or "No additional context.",
+        language=getattr(brief, "language", "English") or "English",
     )
 
     # Build conversation history
@@ -99,13 +104,15 @@ async def call_agent_b_groq(
             "content": f"[Offer: {turn.offer}{brief.unit_label}] {turn.message}",
         })
 
-    # Current turn instruction
+    # Current turn instruction with explicit language reminder
+    lang_name = getattr(brief, "language", "English") or "English"
+    lang_instruction = f" Write your message text in {lang_name}." if lang_name.lower() != "english" else ""
     messages.append({
         "role": "user",
         "content": (
             f"It's your turn. The concession curve suggests offering around "
             f"{suggested_offer}{brief.unit_label} at this stage. "
-            f"Make your next negotiation move. Respond with JSON only."
+            f"Make your next negotiation move.{lang_instruction} Respond with JSON only."
         ),
     })
 

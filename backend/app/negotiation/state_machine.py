@@ -201,6 +201,8 @@ class NegotiationSession:
             "dispute_topic": self.config.brief_a.dispute_topic,
             "unit_label": self.config.brief_a.unit_label,
             "max_turns": settings.max_turns,
+            "language_a": getattr(self.config.brief_a, "language", "English"),
+            "language_b": getattr(self.config.brief_b, "language", "English"),
         })
 
         log.info("negotiation_started", session_id=self.session_id)
@@ -407,8 +409,9 @@ class NegotiationSession:
             # ── Switch agent ──────────────────────────────────────────────────
             self.state.current_agent = AgentId.B if agent_id == AgentId.A else AgentId.A
 
-            # Small delay between turns to avoid hammering rate limits
-            await asyncio.sleep(0.5)
+            # Turn pacing delay so previous agent speech completes cleanly without interruption
+            if settings.turn_delay_seconds > 0:
+                await asyncio.sleep(settings.turn_delay_seconds)
 
         # Max turns exhausted without deal
         if self.state.state == NegotiationState.NEGOTIATING:
