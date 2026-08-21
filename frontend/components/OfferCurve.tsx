@@ -18,9 +18,9 @@ interface OfferCurveProps {
   maxTurns: number;
 }
 
-const W = 640;
-const H = 280;
-const PAD = { top: 20, right: 24, bottom: 40, left: 52 };
+const W = 680;
+const H = 290;
+const PAD = { top: 24, right: 28, bottom: 44, left: 56 };
 
 export default function OfferCurve({
   turns,
@@ -48,7 +48,7 @@ export default function OfferCurve({
     PAD.left + (turnNum / maxTurns) * chartW;
 
   const yScale = (val: number) =>
-    PAD.top + chartH - ((val - minVal) / (maxVal - minVal)) * chartH;
+    PAD.top + chartH - ((val - minVal) / (maxVal - minVal || 1)) * chartH;
 
   // Y tick values
   const yTicks = useMemo(() => {
@@ -86,17 +86,21 @@ export default function OfferCurve({
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.title}>
-          <span className="mono uppercase" style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.1em" }}>
-            📈 Live Offer Curve
-          </span>
+          <span>📈 Live Offer Curve & Convergence Telemetry</span>
         </div>
         <div className={styles.legend}>
-          <span className={styles.legendA}>── Agent A</span>
-          <span className={styles.legendB}>── Agent B</span>
-          {hasZopa && <span className={styles.legendZopa}>▓ ZOPA</span>}
+          <span className={styles.legendA}>
+            <span style={{ width: 10, height: 3, background: "#00FFFF", borderRadius: 2, display: "inline-block" }} />
+            Agent A (Groq)
+          </span>
+          <span className={styles.legendB}>
+            <span style={{ width: 10, height: 3, background: "#FF00FF", borderRadius: 2, display: "inline-block" }} />
+            Agent B (Gemini)
+          </span>
+          {hasZopa && <span className={styles.legendZopa}>▓ ZOPA Zone</span>}
           {gap && (
             <span className={styles.gap}>
-              Gap: <strong>{gap}{unitLabel}</strong>
+              Live Spread: <strong>{gap}{unitLabel}</strong>
             </span>
           )}
         </div>
@@ -109,17 +113,33 @@ export default function OfferCurve({
         className={styles.svg}
         aria-label="Offer curve chart showing both agents' positions over turns"
       >
+        <defs>
+          {/* Cyan Glow Filter */}
+          <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#00FFFF" floodOpacity="0.7" />
+          </filter>
+          {/* Magenta Glow Filter */}
+          <filter id="glow-magenta" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#FF00FF" floodOpacity="0.7" />
+          </filter>
+          {/* ZOPA Gradient */}
+          <linearGradient id="zopaGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(57, 255, 20, 0.18)" />
+            <stop offset="100%" stopColor="rgba(57, 255, 20, 0.28)" />
+          </linearGradient>
+        </defs>
+
         {/* ZOPA band */}
         {hasZopa && (
           <rect
             x={PAD.left}
             y={yScale(zopaHi)}
             width={chartW}
-            height={yScale(zopaLo) - yScale(zopaHi)}
-            fill="rgba(57, 255, 20, 0.18)"
-            stroke="rgba(57, 255, 20, 0.6)"
-            strokeWidth={1}
-            strokeDasharray="6 3"
+            height={Math.max(yScale(zopaLo) - yScale(zopaHi), 2)}
+            fill="url(#zopaGrad)"
+            stroke="#39FF14"
+            strokeWidth={1.5}
+            strokeDasharray="6 4"
           />
         )}
 
@@ -127,56 +147,57 @@ export default function OfferCurve({
         <line
           x1={PAD.left} y1={yScale(scheduleA.floor)}
           x2={W - PAD.right} y2={yScale(scheduleA.floor)}
-          stroke="var(--neo-pink)" strokeWidth={1.5} strokeDasharray="6 4" opacity={0.5}
+          stroke="#00FFFF" strokeWidth={1} strokeDasharray="4 4" opacity={0.4}
         />
         <line
           x1={PAD.left} y1={yScale(scheduleA.ceiling)}
           x2={W - PAD.right} y2={yScale(scheduleA.ceiling)}
-          stroke="var(--neo-pink)" strokeWidth={1.5} strokeDasharray="6 4" opacity={0.25}
+          stroke="#00FFFF" strokeWidth={1} strokeDasharray="4 4" opacity={0.25}
         />
 
         {/* Floor / Ceiling dashed lines — Agent B */}
         <line
           x1={PAD.left} y1={yScale(scheduleB.floor)}
           x2={W - PAD.right} y2={yScale(scheduleB.floor)}
-          stroke="var(--neo-cyan)" strokeWidth={1.5} strokeDasharray="6 4" opacity={0.5}
+          stroke="#FF00FF" strokeWidth={1} strokeDasharray="4 4" opacity={0.4}
         />
         <line
           x1={PAD.left} y1={yScale(scheduleB.ceiling)}
           x2={W - PAD.right} y2={yScale(scheduleB.ceiling)}
-          stroke="var(--neo-cyan)" strokeWidth={1.5} strokeDasharray="6 4" opacity={0.25}
+          stroke="#FF00FF" strokeWidth={1} strokeDasharray="4 4" opacity={0.25}
         />
 
-        {/* Y-axis ticks */}
+        {/* Y-axis gridlines & ticks */}
         {yTicks.map((v) => (
           <g key={v}>
             <line
-              x1={PAD.left - 6} y1={yScale(v)}
+              x1={PAD.left} y1={yScale(v)}
               x2={W - PAD.right} y2={yScale(v)}
-              stroke="rgba(0,0,0,0.08)" strokeWidth={1}
+              stroke="rgba(255, 255, 255, 0.08)" strokeWidth={1} strokeDasharray="3 3"
             />
             <text
               x={PAD.left - 10} y={yScale(v) + 4}
               textAnchor="end"
               fontSize={10}
-              fontFamily="Space Mono, monospace"
-              fill="rgba(0,0,0,0.5)"
+              fontFamily="JetBrains Mono, monospace"
+              fontWeight="600"
+              fill="rgba(255, 255, 255, 0.65)"
             >
               {v}{unitLabel}
             </text>
           </g>
         ))}
 
-        {/* X-axis */}
+        {/* X-axis & Y-axis border lines */}
         <line
           x1={PAD.left} y1={H - PAD.bottom}
           x2={W - PAD.right} y2={H - PAD.bottom}
-          stroke="var(--neo-black)" strokeWidth={2}
+          stroke="rgba(255, 255, 255, 0.2)" strokeWidth={1.5}
         />
         <line
           x1={PAD.left} y1={PAD.top}
           x2={PAD.left} y2={H - PAD.bottom}
-          stroke="var(--neo-black)" strokeWidth={2}
+          stroke="rgba(255, 255, 255, 0.2)" strokeWidth={1.5}
         />
 
         {/* X labels */}
@@ -184,78 +205,98 @@ export default function OfferCurve({
           <text
             key={t}
             x={xScale(t)}
-            y={H - PAD.bottom + 18}
+            y={H - PAD.bottom + 20}
             textAnchor="middle"
             fontSize={10}
-            fontFamily="Space Mono, monospace"
-            fill="rgba(0,0,0,0.5)"
+            fontFamily="JetBrains Mono, monospace"
+            fontWeight="600"
+            fill="rgba(255, 255, 255, 0.65)"
           >
             T{t}
           </text>
         ))}
 
-        {/* Offer lines */}
+        {/* Offer curves (Glow Polylines) */}
         {pointsA && (
           <polyline
             points={pointsA}
             fill="none"
-            stroke="var(--neo-pink)"
-            strokeWidth={3}
+            stroke="#00FFFF"
+            strokeWidth={3.5}
             strokeLinejoin="round"
             strokeLinecap="round"
+            filter="url(#glow-cyan)"
           />
         )}
         {pointsB && (
           <polyline
             points={pointsB}
             fill="none"
-            stroke="var(--neo-cyan)"
-            strokeWidth={3}
+            stroke="#FF00FF"
+            strokeWidth={3.5}
             strokeLinejoin="round"
             strokeLinecap="round"
+            filter="url(#glow-magenta)"
           />
         )}
 
-        {/* Dots on each turn */}
+        {/* Dots on each turn (Luminous Glowing Circles) */}
         {turnsA.map((t, i) => (
-          <circle
-            key={t.turn_id}
-            cx={xScale((i + 1) * 2 - 1)}
-            cy={yScale(t.offer)}
-            r={5}
-            fill="var(--neo-pink)"
-            stroke="var(--neo-black)"
-            strokeWidth={2}
-          >
-            <title>Agent A Turn {t.turn_number}: {t.offer}{unitLabel}</title>
-          </circle>
-        ))}
-        {turnsB.map((t, i) => (
-          <circle
-            key={t.turn_id}
-            cx={xScale((i + 1) * 2)}
-            cy={yScale(t.offer)}
-            r={5}
-            fill="var(--neo-cyan)"
-            stroke="var(--neo-black)"
-            strokeWidth={2}
-          >
-            <title>Agent B Turn {t.turn_number}: {t.offer}{unitLabel}</title>
-          </circle>
+          <g key={t.turn_id}>
+            <circle
+              cx={xScale((i + 1) * 2 - 1)}
+              cy={yScale(t.offer)}
+              r={6.5}
+              fill="#00FFFF"
+              stroke="#060608"
+              strokeWidth={2}
+              filter="url(#glow-cyan)"
+            >
+              <title>Agent A Turn {t.turn_number}: {t.offer}{unitLabel}</title>
+            </circle>
+            <circle
+              cx={xScale((i + 1) * 2 - 1)}
+              cy={yScale(t.offer)}
+              r={2}
+              fill="#ffffff"
+            />
+          </g>
         ))}
 
-        {/* ZOPA label */}
+        {turnsB.map((t, i) => (
+          <g key={t.turn_id}>
+            <circle
+              cx={xScale((i + 1) * 2)}
+              cy={yScale(t.offer)}
+              r={6.5}
+              fill="#FF00FF"
+              stroke="#060608"
+              strokeWidth={2}
+              filter="url(#glow-magenta)"
+            >
+              <title>Agent B Turn {t.turn_number}: {t.offer}{unitLabel}</title>
+            </circle>
+            <circle
+              cx={xScale((i + 1) * 2)}
+              cy={yScale(t.offer)}
+              r={2}
+              fill="#ffffff"
+            />
+          </g>
+        ))}
+
+        {/* ZOPA text watermark */}
         {hasZopa && (
           <text
             x={W - PAD.right - 8}
             y={yScale((zopaLo + zopaHi) / 2) + 4}
             textAnchor="end"
-            fontSize={10}
-            fontFamily="Space Mono, monospace"
-            fill="rgba(20,120,20,0.8)"
-            fontWeight="bold"
+            fontSize={11}
+            fontFamily="JetBrains Mono, monospace"
+            fill="#39FF14"
+            fontWeight="800"
           >
-            ← ZOPA
+            ← ZOPA ({zopaLo}% – {zopaHi}%)
           </text>
         )}
       </svg>
