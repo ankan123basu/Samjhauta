@@ -103,10 +103,10 @@ class HumanBrief(BaseModel):
 
     @model_validator(mode="after")
     def validate_limits(self) -> HumanBrief:
+        # Auto-swap if the user entered floor > ceiling (common when
+        # "better" means a lower number, e.g. Agent B wants to pay less).
         if self.floor > self.ceiling:
-            raise ValueError(
-                f"floor ({self.floor}) cannot exceed ceiling ({self.ceiling})"
-            )
+            self.floor, self.ceiling = self.ceiling, self.floor
         if not (self.floor <= self.initial_position <= self.ceiling):
             # Clamp initial_position silently rather than error — UX nicety
             self.initial_position = max(self.floor, min(self.ceiling, self.initial_position))
