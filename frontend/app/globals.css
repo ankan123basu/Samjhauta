@@ -1,0 +1,354 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Samjhauta — Global Design System
+   NEOBRUTALIST 3D AESTHETIC
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+/* ── CSS Custom Properties ─────────────────────────────────────────────────── */
+:root {
+  /* Core palette */
+  --neo-black:   #0a0a0a;
+  --neo-white:   #f5f0e8;
+  --neo-cream:   #fffbf0;
+  --neo-yellow:  #FFE156;
+  --neo-pink:    #FF5C87;
+  --neo-cyan:    #00E5D1;
+  --neo-green:   #39FF14;
+  --neo-red:     #FF3131;
+  --neo-purple:  #BF5FFF;
+  --neo-orange:  #FF8C42;
+
+  /* Agent colors */
+  --agent-a:     var(--neo-pink);
+  --agent-b:     var(--neo-cyan);
+
+  /* Neobrutalist shadows (offset, no blur) */
+  --shadow-sm:   4px 4px 0px var(--neo-black);
+  --shadow-md:   6px 6px 0px var(--neo-black);
+  --shadow-lg:   8px 8px 0px var(--neo-black);
+  --shadow-xl:   12px 12px 0px var(--neo-black);
+
+  /* Active/pressed state */
+  --shadow-pressed: 2px 2px 0px var(--neo-black);
+
+  /* Borders */
+  --border:      3px solid var(--neo-black);
+  --border-2:    2px solid var(--neo-black);
+  --border-4:    4px solid var(--neo-black);
+
+  /* Typography */
+  --font-sans:   'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono:   'Space Mono', 'Courier New', monospace;
+
+  /* Layout */
+  --radius:      0px; /* neobrutalism = sharp corners */
+  --radius-sm:   4px;
+
+  /* Transitions */
+  --transition:  all 0.12s ease;
+}
+
+/* ── Reset & Base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--neo-white);
+  color: var(--neo-black);
+  line-height: 1.5;
+  min-height: 100vh;
+  /* Dotted grid background — signature neobrutalist pattern */
+  background-image: radial-gradient(circle, rgba(0,0,0,0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* ── Typography ────────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: clamp(2.5rem, 6vw, 5rem); }
+h2 { font-size: clamp(1.8rem, 4vw, 3rem); }
+h3 { font-size: clamp(1.2rem, 2.5vw, 1.8rem); }
+
+.mono { font-family: var(--font-mono); }
+.uppercase { text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ── Neobrutalist Card ─────────────────────────────────────────────────────── */
+.neo-card {
+  background: var(--neo-white);
+  border: var(--border);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+  position: relative;
+}
+
+.neo-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-card--yellow { background: var(--neo-yellow); }
+.neo-card--pink   { background: var(--neo-pink); }
+.neo-card--cyan   { background: var(--neo-cyan); }
+.neo-card--green  { background: var(--neo-green); }
+.neo-card--black  { background: var(--neo-black); color: var(--neo-white); }
+
+/* ── 3D Card (perspective tilt on hover) ───────────────────────────────────── */
+.neo-card-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.neo-card-3d:hover {
+  transform: perspective(1000px) rotateX(-3deg) rotateY(3deg) translate(-2px, -4px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* ── Neobrutalist Button ───────────────────────────────────────────────────── */
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: var(--border);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  text-decoration: none;
+  color: var(--neo-black);
+  background: var(--neo-yellow);
+}
+
+.neo-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: var(--shadow-pressed);
+}
+
+.neo-btn--pink    { background: var(--neo-pink); }
+.neo-btn--cyan    { background: var(--neo-cyan); }
+.neo-btn--black   { background: var(--neo-black); color: var(--neo-white); }
+.neo-btn--green   { background: var(--neo-green); }
+.neo-btn--red     { background: var(--neo-red); color: var(--neo-white); }
+.neo-btn--ghost   { background: transparent; }
+.neo-btn--large   { padding: 16px 36px; font-size: 1.1rem; }
+.neo-btn--small   { padding: 8px 16px; font-size: 0.8rem; }
+
+.neo-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Input ─────────────────────────────────────────────────────────────────── */
+.neo-input {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  background: var(--neo-white);
+  color: var(--neo-black);
+  outline: none;
+  transition: var(--transition);
+}
+
+.neo-input:focus {
+  box-shadow: var(--shadow-md);
+  transform: translate(-1px, -1px);
+}
+
+.neo-input::placeholder { opacity: 0.5; }
+
+/* ── Badge / Pill ──────────────────────────────────────────────────────────── */
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: var(--border-2);
+  box-shadow: 3px 3px 0px var(--neo-black);
+}
+
+.neo-badge--yellow  { background: var(--neo-yellow); }
+.neo-badge--pink    { background: var(--neo-pink); }
+.neo-badge--cyan    { background: var(--neo-cyan); }
+.neo-badge--green   { background: var(--neo-green); }
+.neo-badge--red     { background: var(--neo-red);    color: white; }
+.neo-badge--black   { background: var(--neo-black);  color: var(--neo-white); }
+.neo-badge--orange  { background: var(--neo-orange); }
+
+/* ── Select ────────────────────────────────────────────────────────────────── */
+.neo-select {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  background: var(--neo-white);
+  color: var(--neo-black);
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.neo-select:focus {
+  box-shadow: var(--shadow-md);
+  transform: translate(-1px, -1px);
+}
+
+/* ── Range slider ──────────────────────────────────────────────────────────── */
+.neo-range {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 6px;
+  background: var(--neo-black);
+  border: var(--border-2);
+  cursor: pointer;
+}
+
+.neo-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  background: var(--neo-yellow);
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+/* ── Label ─────────────────────────────────────────────────────────────────── */
+.neo-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+  color: var(--neo-black);
+}
+
+/* ── Divider ───────────────────────────────────────────────────────────────── */
+.neo-divider {
+  height: 3px;
+  background: var(--neo-black);
+  border: none;
+  margin: 24px 0;
+}
+
+/* ── Floating / Pulsing animation ──────────────────────────────────────────── */
+@keyframes neo-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+@keyframes neo-pulse-border {
+  0%, 100% { box-shadow: var(--shadow-md); }
+  50%       { box-shadow: var(--shadow-xl); }
+}
+
+@keyframes neo-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+@keyframes neo-slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes neo-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+@keyframes neo-progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+.animate-float { animation: neo-float 3s ease-in-out infinite; }
+.animate-pulse-border { animation: neo-pulse-border 1.5s ease-in-out infinite; }
+.animate-blink  { animation: neo-blink 1s step-end infinite; }
+.animate-slide-in { animation: neo-slide-in 0.3s ease forwards; }
+.animate-shake  { animation: neo-shake 0.5s ease; }
+
+/* ── Status indicator dot ──────────────────────────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--neo-black);
+}
+.status-dot--green  { background: var(--neo-green);  animation: neo-pulse-border 1s infinite; }
+.status-dot--red    { background: var(--neo-red); }
+.status-dot--yellow { background: var(--neo-yellow); animation: neo-blink 0.8s step-end infinite; }
+.status-dot--black  { background: var(--neo-black); }
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--neo-white); border-left: 2px solid var(--neo-black); }
+::-webkit-scrollbar-thumb { background: var(--neo-black); }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* ── Utility classes ───────────────────────────────────────────────────────── */
+.flex         { display: flex; }
+.flex-col     { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center  { justify-content: center; }
+.gap-4        { gap: 16px; }
+.gap-2        { gap: 8px; }
+.gap-6        { gap: 24px; }
+.w-full       { width: 100%; }
+.h-full       { height: 100%; }
+.text-center  { text-align: center; }
+.relative     { position: relative; }
+.absolute     { position: absolute; }
+.overflow-hidden { overflow: hidden; }
+.overflow-y-auto { overflow-y: auto; }
+.grid         { display: grid; }
+.font-bold    { font-weight: 700; }
+.opacity-50   { opacity: 0.5; }

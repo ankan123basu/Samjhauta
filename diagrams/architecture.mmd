@@ -1,0 +1,18 @@
+flowchart TD
+    A[Human A briefs Agent A\npriorities · floor/ceiling · tone] --> C[Negotiation State Machine\nstate_machine.py]
+    B[Human B briefs Agent B\npriorities · floor/ceiling · tone] --> C
+    C --> D[Agent A turn\nGroq Llama 3.3 70B]
+    D --> E[Grounding guardrail\ndoes this claim match Human A's actual brief?]
+    E -- Fails --> F[Reject turn · regenerate\nwith correction injected into prompt]
+    F --> D
+    E -- Passes --> G[Concession-schedule check\nis this a real concession or a stall?]
+    G --> H[Deadlock detector\nsliding window · ZOPA gap check]
+    H --> I{Converging?}
+    I -- No · stuck --> J[Escalate to both humans\nstop · explain why · ask for input]
+    I -- Yes --> K[Agent B turn\nGemini 3.5 Flash]
+    K --> E
+    C --> L[TTS\nbrowser speechSynthesis — both agents\n$0 · no API key]
+    C --> M[Live captions / transcript\nPRIMARY UI — always on\nif audio fails this is sufficient]
+    N[Human speaks to barge in] --> O[STT\nGroq Whisper primary\nbrowser SpeechRecognition fallback]
+    O --> C
+    D -.provider rate-limited / unreachable.-> P[Fallback: text-only mode\ncaptions continue · audio pauses\nvisible FALLBACK MODE banner]
