@@ -64,6 +64,8 @@ export default function NegotiatePage() {
   const [isRecordingSTT, setIsRecordingSTT] = useState(false);
   const [bargeTarget, setBargeTarget] = useState<"A" | "B">("A");
   const [ttsEnabled, setTtsEnabled] = useState(true);
+  const ttsEnabledRef = useRef(ttsEnabled);
+  useEffect(() => { ttsEnabledRef.current = ttsEnabled; }, [ttsEnabled]);
   const [turnCount, setTurnCount] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -131,7 +133,7 @@ export default function NegotiatePage() {
         setStatus("NEGOTIATING");
 
         // TTS
-        if (ttsEnabled && ttsAvail && payload.tts) {
+        if (ttsEnabledRef.current && ttsAvail && payload.tts) {
           const ttsData = payload.tts as { text: string; voice_hint: { pitch: number; rate: number; name: string; lang: string; fallback_lang: string } };
           setSpeakingAgent(turn.agent_id);
           await speak(ttsData.text, ttsData.voice_hint, turn.agent_id);
