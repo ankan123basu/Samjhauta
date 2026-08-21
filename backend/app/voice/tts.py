@@ -22,14 +22,14 @@ from app.models.schemas import AgentId
 # Voice hints sent to the frontend — browser picks the closest available voice
 VOICE_HINTS: dict[AgentId, dict] = {
     AgentId.A: {
-        "name": "Google UK English Male",
-        "lang": "en-GB",
-        "pitch": 1.0,
+        "name": "Microsoft Mark - English (United States)",
+        "lang": "en-US",
+        "pitch": 0.9,
         "rate": 0.95,
         "fallback_lang": "en",
     },
     AgentId.B: {
-        "name": "Google US English",
+        "name": "Microsoft Zira - English (United States)",
         "lang": "en-US",
         "pitch": 1.1,
         "rate": 1.0,

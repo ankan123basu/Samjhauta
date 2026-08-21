@@ -59,6 +59,7 @@ from app.models.schemas import (
 from app.negotiation.concession_schedule import ConcessionSchedule, compute_zopa
 from app.negotiation.deadlock_detector import DeadlockDetector
 from app.negotiation.grounding_guardrail import GroundingGuardrail, MAX_REGENERATION_ATTEMPTS
+from app.voice.tts import get_tts_metadata
 
 log = structlog.get_logger(__name__)
 
@@ -355,6 +356,7 @@ class NegotiationSession:
                 "schedule_a": {"current": self._schedule_a.current_offer, "floor": self._schedule_a.floor, "ceiling": self._schedule_a.ceiling},
                 "schedule_b": {"current": self._schedule_b.current_offer, "floor": self._schedule_b.floor, "ceiling": self._schedule_b.ceiling},
                 "deadlock_summary": self._deadlock.summary(),
+                "tts": get_tts_metadata(agent_id, turn.message),
             })
 
             # ── Deal check ────────────────────────────────────────────────────
