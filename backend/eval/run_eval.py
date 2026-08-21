@@ -116,7 +116,14 @@ async def run_scenario(scenario: dict, use_live: bool = False) -> ScenarioResult
     # Handle adversarial fabrication scenarios — test guardrail directly
     if category == "adversarial_fabrication":
         fabricated_claim = scenario.get("fabricated_claim", "")
-        guardrail = GroundingGuardrail(brief_a)  # test against agent A's brief
+        groq_client = None
+        if use_live and settings.groq_configured:
+            try:
+                import groq as groq_sdk
+                groq_client = groq_sdk.Groq(api_key=settings.groq_api_key)
+            except Exception:
+                pass
+        guardrail = GroundingGuardrail(brief_a, groq_client=groq_client)  # test against agent A's brief
         caught = guardrail.force_fabrication_test(fabricated_claim)
         expected_catch = scenario.get("expected_guardrail_catch", True)
         return ScenarioResult(
@@ -132,8 +139,14 @@ async def run_scenario(scenario: dict, use_live: bool = False) -> ScenarioResult
     # Build session with appropriate agents
     config = SessionConfig(brief_a=brief_a, brief_b=brief_b)
 
+    groq_client = None
     if use_live and settings.groq_configured:
         agent_a = make_groq_agent()
+        try:
+            import groq as groq_sdk
+            groq_client = groq_sdk.Groq(api_key=settings.groq_api_key)
+        except Exception:
+            pass
     else:
         agent_a = make_mock_agent(AgentId.A)
 
@@ -146,6 +159,7 @@ async def run_scenario(scenario: dict, use_live: bool = False) -> ScenarioResult
         config=config,
         agent_a_fn=agent_a,
         agent_b_fn=agent_b,
+        groq_client=groq_client,
     )
 
     t0 = time.perf_counter()

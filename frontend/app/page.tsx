@@ -64,7 +64,7 @@ function BriefPanel({
     onChange({ ...brief, [field]: value });
 
   const modelBadge =
-    agentId === "A" ? "GROQ LLAMA 3.3 70B" : "GEMINI 3.5 FLASH";
+    agentId === "A" ? "GROQ GPT-OSS-120B" : "GEMINI 3.6 FLASH";
   const modelBadgeClass = agentId === "A" ? "neo-badge--pink" : "neo-badge--cyan";
 
   return (
@@ -284,8 +284,8 @@ export default function HomePage() {
               <span className="status-dot status-dot--green" />
               FREE TIER · $0
             </div>
-            <div className={`neo-badge neo-badge--pink mono`}>AGENT A: GROQ LLAMA 3.3 70B</div>
-            <div className={`neo-badge neo-badge--cyan mono`}>AGENT B: GEMINI 3.5 FLASH</div>
+            <div className={`neo-badge neo-badge--pink mono`}>AGENT A: GROQ GPT-OSS-120B</div>
+            <div className={`neo-badge neo-badge--cyan mono`}>AGENT B: GEMINI 3.6 FLASH</div>
           </div>
         </div>
 
@@ -356,11 +356,11 @@ export default function HomePage() {
           <div className={styles.archGrid}>
             <div className={styles.archItem}>
               <span className="neo-badge neo-badge--pink">AGENT A</span>
-              <p>Groq Llama 3.3 70B reasons from your brief and generates negotiation turns.</p>
+              <p>Groq gpt-oss-120b reasons from your brief and generates negotiation turns.</p>
             </div>
             <div className={styles.archItem}>
               <span className="neo-badge neo-badge--cyan">AGENT B</span>
-              <p>Google Gemini 3.5 Flash — a genuinely different foundation model — does the same for the other human.</p>
+              <p>Google Gemini 3.6 Flash — a genuinely different foundation model — does the same for the other human.</p>
             </div>
             <div className={styles.archItem}>
               <span className="neo-badge neo-badge--yellow">GUARDRAIL</span>

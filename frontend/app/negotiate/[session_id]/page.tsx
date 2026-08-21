@@ -286,7 +286,7 @@ export default function NegotiatePage() {
           <AgentPanel
             agentId="A"
             agentName={lastA?.message ? "Agent A" : "Agent A"}
-            modelName="GROQ LLAMA 3.3 70B"
+            modelName="GROQ GPT-OSS-120B"
             currentOffer={lastA?.offer ?? scheduleA.current}
             previousOffer={lastA?.previous_offer ?? null}
             lastMessage={lastA?.message ?? null}
@@ -306,7 +306,7 @@ export default function NegotiatePage() {
           <AgentPanel
             agentId="B"
             agentName="Agent B"
-            modelName="GEMINI 3.5 FLASH"
+            modelName="GEMINI 3.6 FLASH"
             currentOffer={lastB?.offer ?? scheduleB.current}
             previousOffer={lastB?.previous_offer ?? null}
             lastMessage={lastB?.message ?? null}

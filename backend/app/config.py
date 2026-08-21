@@ -20,9 +20,10 @@ class Settings(BaseSettings):
     google_api_key: str = Field(default="", description="Google AI Studio API key — free tier")
 
     # ── Model identifiers ─────────────────────────────────────────────────────
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_guardrail_model: str = "allam-2-7b"
     groq_whisper_model: str = "whisper-large-v3-turbo"
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.6-flash"
 
     # ── Server ────────────────────────────────────────────────────────────────
     host: str = "0.0.0.0"

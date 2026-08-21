@@ -46,13 +46,13 @@ Specifically: the concession *reasoning* — "given that they've just moved 5%, 
 
 | Provider | Model | RPM | RPD | Limit hit at… |
 |---|---|---|---|---|
-| Groq | Llama 3.3 70B | 30 | 1,000 | ~2 concurrent sessions |
-| Groq | Whisper Large v3 Turbo | 20 | 2,000 | ~20 barge-ins/day |
-| Google AI Studio | Gemini 3.5 Flash | ~15–60 | ~1,500 | ~3–6 concurrent sessions |
+| Groq | gpt-oss-120b | 30 | 14,400 | ~2 concurrent sessions |
+| Groq | allam-2-7b (guardrail) | 30 | 14,400 | ~2 concurrent sessions |
+| Google AI Studio | Gemini 3.6 Flash | 15 | 1,500 | ~1-2 concurrent sessions (fails our 20-scenario eval) |
 
 At 10k users you'd need:
-- **Groq Developer plan:** ~$0.59/1M tokens for Llama 3.3 70B
-- **Google AI (billed):** ~$0.30/1M input tokens for Gemini 3.5 Flash
+- **Groq Developer plan:** or OpenAI paid API
+- **Google AI (billed):** ~$0.30/1M input tokens for Gemini 3.6 Flash
 - **Full negotiation cost:** ~$0.02 per session (20 turns × ~500 tokens/turn × 2 providers)
 - **At 10k sessions/day:** ~$200/day
 

@@ -25,33 +25,11 @@ When an agent produces a turn, before it is accepted we:
        (a) Directly stated in the HumanBrief, OR
        (b) A reasonable inference from the HumanBrief (e.g. "I want to pay less"
            is a valid inference if floor < initial_position)
+       This check uses a fast regex pre-filter to skip harmless claims, and an
+       LLM grounding classifier for deep semantic validation when needed.
 
-  3. If any claim fails both checks → REJECT the turn and regenerate with a
+  3. If any claim fails the check → REJECT the turn and regenerate with a
      correction injected into the prompt.
-
-TRADEOFFS
----------
-vs Regex / keyword matching:
-  Pro: LLM extraction catches free-form claims ("the total was supposedly ₹5000"
-       when the brief never mentioned a total).
-  Con: +1 LLM call per turn → ~doubled latency per turn.
-  Mitigated by: using the fastest available model for extraction.
-
-vs No guardrail:
-  Risk: Agents regularly fabricate constraints under adversarial prompting.
-  This was tested in the eval harness — without the guardrail, 3/4 adversarial
-  scenarios produced fabricated claims. With it, 0/4.
-
-EXTRACTION PROMPT DESIGN
--------------------------
-The extraction call uses a structured JSON response format so it's
-deterministic and parseable without further LLM calls.
-
-REGENERATION LIMIT
-------------------
-We allow at most MAX_REGENERATION_ATTEMPTS=3 before accepting the best
-available turn with a flag. After 3 failures, we inject a hard correction
-directly into the message rather than looping forever.
 """
 from __future__ import annotations
 
@@ -85,7 +63,7 @@ def _extract_claims_with_llm(message: str, groq_client) -> list[str]:
     """Use Groq's fast model to extract factual claims from an agent turn."""
     try:
         response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",  # fast, cheap for extraction
+            model=settings.groq_guardrail_model,  # fast, cheap for extraction
             messages=[
                 {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
                 {"role": "user", "content": f"Message to analyse:\n{message}"},
@@ -97,10 +75,8 @@ def _extract_claims_with_llm(message: str, groq_client) -> list[str]:
         data = json.loads(response.choices[0].message.content)
         return data.get("claims", [])
     except Exception:
-        # If extraction fails, be conservative: return empty list (no claims found)
-        # This means we err on the side of accepting the turn rather than rejecting
-        # when the extraction model itself is unavailable.
-        return []
+        # If extraction fails, fall back to regex
+        return _extract_claims_regex(message)
 
 
 def _extract_claims_regex(message: str) -> list[str]:
@@ -134,15 +110,57 @@ def _extract_claims_regex(message: str) -> list[str]:
 
 # ── Grounding check ───────────────────────────────────────────────────────────
 
-def _is_claim_grounded(claim: str, brief: HumanBrief) -> tuple[bool, str]:
-    """
-    Checks whether a claim is derivable from the HumanBrief.
-    Returns (is_grounded, reason).
+GROUNDING_SYSTEM_PROMPT = """You are a grounding classifier for a negotiation guardrail system.
+You are given:
+1. A candidate claim made by our agent (representing our human).
+2. The private brief of our human containing facts, constraints (floor, ceiling, initial position), context, and rules.
 
-    We check against:
-    - brief.initial_position, brief.floor, brief.ceiling
-    - brief.private_context (free text)
-    - brief.dispute_topic
+You must decide whether the candidate claim is supported by (grounded in) our human's brief.
+A claim is grounded if:
+- It is a direct fact from the brief (e.g. "my floor is 40%").
+- It is a reasonable strategic argument or position that doesn't contradict the brief limits (e.g. bidding 50% when floor is 40% and ceiling is 60%).
+- It is an opinion or soft reasoning consistent with the private context.
+
+A claim is NOT grounded (fabrication/hallucination) if:
+- It claims a limit, cost, or percentage that contradicts our brief limits (e.g. claiming a cost of 7500 when it's not in the brief, or claiming the floor is 30% when it is 40%).
+- It fabricates a prior agreement, promise, or statement by either party that is NOT in the brief (e.g. "my flatmate already agreed to 80%" or "we promised last week to split 50/50" when the brief says nothing about such agreements).
+- It attributes constraints to the other party that we cannot verify from our brief.
+
+Return a JSON object only:
+{
+  "grounded": true or false,
+  "reason": "a brief explanation of why it is or is not grounded (especially if false)"
+}
+"""
+
+
+def _needs_llm_grounding_check(claim: str) -> bool:
+    """
+    Fast pre-filter to decide if we need to call the LLM for grounding.
+    Returns True if the claim contains numbers, currency symbols, or attribution keywords.
+    """
+    claim_lower = claim.lower()
+    
+    # 1. Contains a number
+    if re.search(r'\d+', claim):
+        return True
+        
+    # 2. Contains attribution or contract/agreement keywords
+    keywords = [
+        "agreed", "said", "promised", "confirmed", "told me",
+        "conversation", "earlier", "previous", "last time", "limit",
+        "floor", "ceiling", "budget", "cost", "price", "quote",
+        "agreement", "promise"
+    ]
+    if any(k in claim_lower for k in keywords):
+        return True
+        
+    return False
+
+
+def _is_claim_grounded_rule(claim: str, brief: HumanBrief) -> tuple[bool, str]:
+    """
+    Rule-based fallback check when LLM is unavailable.
     """
     claim_lower = claim.lower()
     brief_text = (
@@ -181,6 +199,44 @@ def _is_claim_grounded(claim: str, brief: HumanBrief) -> tuple[bool, str]:
     return True, "grounded"
 
 
+def _is_claim_grounded_with_llm(claim: str, brief: HumanBrief, groq_client) -> tuple[bool, str]:
+    """
+    Deep grounding check using a fast LLM call.
+    Uses a fast pre-filter to bypass harmless claims.
+    """
+    if not _needs_llm_grounding_check(claim):
+        return True, "grounded (pre-filter passed)"
+
+    brief_data = {
+        "name": brief.name,
+        "initial_position": brief.initial_position,
+        "floor": brief.floor,
+        "ceiling": brief.ceiling,
+        "unit": brief.unit_label,
+        "private_context": brief.private_context,
+        "dispute_topic": brief.dispute_topic
+    }
+    
+    user_prompt = f"Candidate Claim: \"{claim}\"\n\nHuman Brief:\n{json.dumps(brief_data, indent=2)}"
+    
+    try:
+        response = groq_client.chat.completions.create(
+            model=settings.groq_guardrail_model,  # fast, low latency
+            messages=[
+                {"role": "system", "content": GROUNDING_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=150,
+            temperature=0,
+        )
+        result = json.loads(response.choices[0].message.content)
+        return bool(result.get("grounded", True)), result.get("reason", "No reason provided")
+    except Exception as e:
+        # Fallback to rules on error
+        return _is_claim_grounded_rule(claim, brief)
+
+
 # ── Main guardrail ────────────────────────────────────────────────────────────
 
 class GroundingGuardrail:
@@ -215,7 +271,10 @@ class GroundingGuardrail:
         # Step 2: Check each claim
         flags = []
         for claim in claims:
-            grounded, reason = _is_claim_grounded(claim, self.brief)
+            if self._groq_client is not None:
+                grounded, reason = _is_claim_grounded_with_llm(claim, self.brief, self._groq_client)
+            else:
+                grounded, reason = _is_claim_grounded_rule(claim, self.brief)
             if not grounded:
                 flags.append(reason)
 
@@ -249,7 +308,7 @@ class GroundingGuardrail:
         """
         TEST HOOK used by the eval harness.
         Injects a known-fabricated claim and returns True if the guardrail
-        correctly catches it (expected: True on adversarial scenarios).
+        correctly catches it.
         """
         passed, flags = self.check_turn(fabricated_claim)
         return not passed  # True = guardrail correctly caught the fabrication
