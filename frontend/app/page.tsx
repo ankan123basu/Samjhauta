@@ -325,7 +325,7 @@ function ScrollHero() {
         {/* Centered Hero Content (Clean Direct Presentation) */}
         <div ref={contentRef} className="hero-content">
           <h1 className="hero-h1">
-            Two Agents. <span className="hero-grad-text">One Deal.</span>
+            Two AI Agents. <span className="hero-grad-text">One Deal.</span>
             <br />Zero Excuses.
           </h1>
 
