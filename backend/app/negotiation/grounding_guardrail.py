@@ -48,15 +48,19 @@ MAX_REGENERATION_ATTEMPTS = 3
 
 EXTRACTION_SYSTEM_PROMPT = """You are a claim extractor for a negotiation guardrail system.
 
-Given a negotiation message, extract all FACTUAL CLAIMS made about:
-- What the human said, agreed to, or wants
-- Any specific numbers (costs, percentages, amounts)
-- Any limits, floors, or ceilings mentioned
-- Any objective facts about the dispute
+Given a negotiation message, extract all FACTUAL CLAIMS that require grounding verification.
+ONLY extract statements that reference:
+- Something the OTHER party supposedly said, agreed to, or promised.
+- A specific objective fact or number attributed to conversation history or the real world (e.g. "a plumber quoted us $500", "you broke it yesterday").
+
+CRITICAL EXCLUSIONS - DO NOT EXTRACT:
+- A bare statement of the agent's own current offer or position (e.g. "I am offering 30%", "I can meet at 10am"). This is a negotiation move, not a claim about the world.
+- The agent's own feelings or desires (e.g. "I want to resolve this fairly").
+- The agent bluffing about its own limits (e.g. "My absolute limit is 45%").
 
 Return a JSON object: {"claims": ["claim1", "claim2", ...]}
-If no factual claims, return {"claims": []}
-Be precise — only extract explicit factual claims, not opinions."""
+If there are no factual claims that meet the criteria, return {"claims": []}
+Be precise — only extract claims that actually require verification against a brief."""
 
 
 def _extract_claims_with_llm(message: str, groq_client) -> list[str]:
@@ -122,9 +126,14 @@ A claim is grounded if:
 - It is an opinion or soft reasoning consistent with the private context.
 
 A claim is NOT grounded (fabrication/hallucination) if:
-- It claims a limit, cost, or percentage that contradicts our brief limits (e.g. claiming a cost of 7500 when it's not in the brief, or claiming the floor is 30% when it is 40%).
 - It fabricates a prior agreement, promise, or statement by either party that is NOT in the brief (e.g. "my flatmate already agreed to 80%" or "we promised last week to split 50/50" when the brief says nothing about such agreements).
+- It fabricates objective facts about the dispute that aren't in the brief (e.g. inventing a repair quote from a plumber when none exists).
 - It attributes constraints to the other party that we cannot verify from our brief.
+
+NOTE: It IS completely acceptable and GROUNDED for an agent to:
+1. State its own current offer or position (e.g. "I am offering 30%" or "I can meet at 10am"). This is a negotiation move, NOT a fabrication. Do NOT flag an offer as ungrounded just because it differs from the 'initial_position' in the brief.
+2. Bluff about its *own* limits (e.g. saying "My absolute limit is 45%" even if the brief says the floor is 30%). This is normal negotiation posturing. 
+Do NOT flag these as ungrounded.
 
 Return a JSON object only:
 {

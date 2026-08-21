@@ -78,12 +78,9 @@ class ConcessionSchedule:
         self.t_max = t_max or (settings.max_turns // 2)
 
         # Normalise: from Agent A's perspective, "better" = lower % (pays less)
-        # We handle perspective-independence by letting the state machine
-        # tell the schedule which direction is "better" via `direction`.
-        # direction = +1 means higher values are better for this agent (Agent B
-        # wants to pay less → lower %; from B's perspective floor/ceiling
-        # are already set correctly in the brief).
-        # We keep this class direction-agnostic: floor ≤ ceiling always.
+        # We determine the direction of concession by checking if the initial
+        # position is closer to the floor or the ceiling.
+        self.concede_up = self.initial_position < (self.floor + self.ceiling) / 2.0
 
         self._turn_count = 0
         self._offer_history: list[float] = []
@@ -100,9 +97,15 @@ class ConcessionSchedule:
     def target_offer_at(self, t: int) -> float:
         """
         The ideal offer at turn t according to the curve.
-        Returns a value in [floor, ceiling].
         """
-        return self.floor + (self.ceiling - self.floor) * self.alpha(t)
+        if self.concede_up:
+            best_limit = min(self.initial_position, self.floor)
+            walkaway = self.ceiling
+            return walkaway - (walkaway - best_limit) * self.alpha(t)
+        else:
+            best_limit = max(self.initial_position, self.ceiling)
+            walkaway = self.floor
+            return walkaway + (best_limit - walkaway) * self.alpha(t)
 
     # ── Public API ────────────────────────────────────────────────────────────
 
@@ -122,17 +125,12 @@ class ConcessionSchedule:
             # Never go *worse* than previous offer (agents don't walk backward)
             if self._offer_history:
                 prev = self._offer_history[-1]
-                # "Better" direction depends on which agent —
-                # we don't know here, so we use the delta from the brief.
-                # If ceiling > initial_position this agent wants high values;
-                # if floor < initial_position this agent wants low values.
-                # Simplified: always apply monotone clamping in conceder direction.
-                if self.ceiling > self.initial_position:
-                    # Agent wants higher → conceder moves DOWN toward floor
-                    offer = min(prev, offer)
-                else:
-                    # Agent wants lower → conceder moves UP toward ceiling
+                if self.concede_up:
                     offer = max(prev, offer)
+                    offer = min(self.ceiling, offer)
+                else:
+                    offer = min(prev, offer)
+                    offer = max(self.floor, offer)
 
         # Record and round to 1 decimal place
         offer = round(offer, 1)
@@ -148,12 +146,10 @@ class ConcessionSchedule:
             return 0.0
         prev = self._offer_history[-2]
         # Direction-aware delta: concession means moving away from initial pos.
-        if self.ceiling > self.initial_position:
-            # Agent wants high → concession = decrease
-            return round(prev - new_offer, 2)
-        else:
-            # Agent wants low → concession = increase
+        if self.concede_up:
             return round(new_offer - prev, 2)
+        else:
+            return round(prev - new_offer, 2)
 
     def is_stall(self, new_offer: float) -> bool:
         """True if the delta is too small to count as a real concession."""

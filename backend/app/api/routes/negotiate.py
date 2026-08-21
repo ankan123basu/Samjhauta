@@ -12,7 +12,7 @@ import structlog
 from fastapi import APIRouter, BackgroundTasks, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
-from app.agents.provider_fallback import make_groq_agent, make_gemini_agent, make_mock_agent
+from app.agents.provider_fallback import make_groq_agent, make_groq_agent_b, make_gemini_agent, make_mock_agent
 from app.config import settings
 from app.models.schemas import (
     AgentId,
@@ -37,10 +37,10 @@ def _build_session(config: SessionConfig) -> NegotiationSession:
         log.warning("groq_not_configured_using_mock")
         agent_a = make_mock_agent(AgentId.A)
 
-    if settings.gemini_configured:
-        agent_b = make_gemini_agent()
+    if settings.groq_configured:
+        agent_b = make_groq_agent_b()
     else:
-        log.warning("gemini_not_configured_using_mock")
+        log.warning("groq_b_not_configured_using_mock")
         agent_b = make_mock_agent(AgentId.B)
 
     # Shared Groq client for grounding guardrail extraction (optional)
@@ -48,7 +48,7 @@ def _build_session(config: SessionConfig) -> NegotiationSession:
     if settings.groq_configured:
         try:
             import groq as groq_sdk
-            groq_client = groq_sdk.Groq(api_key=settings.groq_api_key)
+            groq_client = groq_sdk.Groq(api_key=settings.get_groq_api_key)
         except Exception:
             pass
 

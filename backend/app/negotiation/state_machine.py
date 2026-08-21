@@ -247,32 +247,50 @@ class NegotiationSession:
             turn: Optional[NegotiationTurn] = None
 
             for attempt in range(MAX_REGENERATION_ATTEMPTS):
-                try:
-                    t0 = time.perf_counter()
-                    turn = await agent_fn(
-                        brief=brief,
-                        history=self.state.turns,
-                        suggested_offer=suggested_offer,
-                        correction=correction,
-                    )
-                    latency_ms = (time.perf_counter() - t0) * 1000
-                    turn.llm_latency_ms = latency_ms
-                    turn.turn_number = turn_num
-                    self._latencies_ms.append(latency_ms)
+                # Inner loop for API retries (rate limits/network issues)
+                api_retries = 3
+                for api_attempt in range(api_retries):
+                    try:
+                        t0 = time.perf_counter()
+                        turn = await agent_fn(
+                            brief=brief,
+                            history=self.state.turns,
+                            suggested_offer=suggested_offer,
+                            correction=correction,
+                        )
+                        latency_ms = (time.perf_counter() - t0) * 1000
+                        turn.llm_latency_ms = latency_ms
+                        turn.turn_number = turn_num
+                        self._latencies_ms.append(latency_ms)
+                        break # Success, break out of API retry loop
 
-                except Exception as exc:
-                    provider = "groq" if agent_id == AgentId.A else "gemini"
-                    self._provider_errors[provider] = self._provider_errors.get(provider, 0) + 1
-                    log.error("agent_call_failed", agent=agent_id, attempt=attempt, error=str(exc))
+                    except Exception as exc:
+                        provider = "groq" if agent_id == AgentId.A else "gemini"
+                        self._provider_errors[provider] = self._provider_errors.get(provider, 0) + 1
+                        log.error("agent_call_failed", agent=agent_id, attempt=attempt, api_attempt=api_attempt, error=str(exc))
 
-                    # Check if this is a rate-limit error
-                    err_str = str(exc).lower()
-                    if "rate" in err_str or "429" in err_str or "quota" in err_str or "exhausted" in err_str:
-                        await self._enter_fallback(provider, str(exc))
-                        return  # pause; caller will resume when provider is back
-                    # Other error: short delay and retry
-                    await asyncio.sleep(1.0)
-                    continue
+                        err_str = str(exc).lower()
+                        if "rate" in err_str or "429" in err_str or "quota" in err_str or "exhausted" in err_str:
+                            if api_attempt < api_retries - 1:
+                                backoff = 20 * (api_attempt + 1) # 20s, 40s
+                                log.warning(f"Rate limited. Backing off for {backoff}s...")
+                                await asyncio.sleep(backoff)
+                                continue
+                            else:
+                                await self._enter_fallback(provider, str(exc))
+                                return  # pause; caller will resume when provider is back
+                        
+                        # Other error: short delay and retry
+                        if api_attempt < api_retries - 1:
+                            await asyncio.sleep(2.0)
+                            continue
+                        else:
+                            await self._enter_fallback(provider, str(exc))
+                            return
+
+                # If all API retries failed without returning, turn is still None
+                if turn is None:
+                    break  # fall through to the None guard below
 
                 # ── Grounding check ───────────────────────────────────────────
                 passed, flags = guardrail.check_turn(turn.message)
@@ -287,6 +305,7 @@ class NegotiationSession:
                     )
                     if attempt < MAX_REGENERATION_ATTEMPTS - 1:
                         correction = guardrail.correction_injection(flags)
+                        turn = None  # reset for next attempt
                         continue  # regenerate
                     else:
                         # Accept with flags on final attempt, but sanitise
@@ -342,7 +361,15 @@ class NegotiationSession:
             offer_a = self._schedule_a.current_offer
             offer_b = self._schedule_b.current_offer
             if offer_a is not None and offer_b is not None:
-                if abs(offer_a - offer_b) <= DEAL_TOLERANCE:
+                crossed = False
+                if self._schedule_a.concede_up and not self._schedule_b.concede_up:
+                    if offer_a >= offer_b:
+                        crossed = True
+                elif not self._schedule_a.concede_up and self._schedule_b.concede_up:
+                    if offer_b >= offer_a:
+                        crossed = True
+
+                if abs(offer_a - offer_b) <= DEAL_TOLERANCE or crossed:
                     deal_val = round((offer_a + offer_b) / 2, 1)
                     self.state.deal_value = deal_val
                     self.state.state = NegotiationState.DEAL_REACHED

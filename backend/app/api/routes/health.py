@@ -18,7 +18,7 @@ async def health() -> HealthResponse:
             import httpx, asyncio
             async with httpx.AsyncClient(timeout=2.0) as c:
                 r = await c.get("https://api.groq.com/openai/v1/models",
-                                headers={"Authorization": f"Bearer {settings.groq_api_key}"})
+                                headers={"Authorization": f"Bearer {settings.get_groq_api_key}"})
                 groq_ok = r.status_code in (200, 401)  # 401 = key invalid but server up
         except Exception:
             groq_ok = False

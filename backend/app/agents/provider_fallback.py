@@ -60,6 +60,13 @@ def make_groq_agent(groq_client=None):
     return functools.partial(call_agent_a, groq_client=groq_client)
 
 
+def make_groq_agent_b(groq_client=None):
+    """Returns the real Agent B callable using a different Groq model."""
+    from app.agents.agent_b_groq import call_agent_b_groq
+    import functools
+    return functools.partial(call_agent_b_groq, groq_client=groq_client)
+
+
 def make_gemini_agent(gemini_client=None):
     """Returns the real Agent B callable (closes over a client instance)."""
     from app.agents.agent_b_gemini import call_agent_b

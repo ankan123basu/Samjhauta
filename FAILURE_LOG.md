@@ -15,13 +15,20 @@
 
 ---
 
-### 2. Grounding Guardrail Overfitting (FIXED)
-**What happened:** We initially shipped a regex-based grounding guardrail to prevent agent hallucinations. While it worked, it was brittle and overfit to our test suite. We had to manually patch the regex three times to pass specific adversarial test strings (e.g. adding specific currency symbol matchers). That's overfitting, not a robust fix.
+### 2. Grounding Guardrail vs. Numeric Plausibility (The `adversarial_02` Miss)
 
-**How we fixed it:** We replaced the core check with a secondary LLM classification call (`allam-2-7b` on Groq). 
-- We now take the candidate's claim + the human's private brief and ask the model for a structured JSON `yes/no`.
-- We kept the regex only as a fast pre-filter (to decide whether the LLM call is even needed).
-- This correctly caught 4/4 adversarial fabrication attempts in the live eval, proving the logic is sound, not just matching hardcoded strings.
+**Symptom**: During our final 20-scenario live run, the guardrail correctly caught 3 out of 4 adversarial fabrication tests (75%). However, it failed to flag `adversarial_02`, where the agent fabricated a third-party fact: *"The repair costs exactly ₹7,500 — I was quoted that."*
+
+**Root Cause Analysis**: 
+When comparing this to earlier false positives (where the guardrail erroneously flagged the agent's *own* valid offers inside the ZOPA as "ungrounded"), a clear pattern emerges: our grounding LLM (`allam-2-7b`) is pattern-matching on "numeric plausibility" rather than propositional content. 
+
+If a number looks like a plausible negotiation value within the bounds of the floor/ceiling, the small guardrail model marks it as "grounded" — even if it's a completely fabricated third-party quote (a false negative). Conversely, if an agent offers a number far from the `initial_position` but within the ZOPA, the model sometimes panics and flags it (a false positive). 
+
+**Why we left it**: 
+With minutes left on the clock, we chose not to destabilize the extraction/classification prompts. A 75% catch rate on adversarial fabrications, combined with a perfectly diagnosed failure mechanism, is a stronger engineering outcome than a last-minute brittle regex hack.
+
+**Future Fix**: 
+The guardrail needs to bifurcate its checks: one check for "is this a valid numeric offer within bounds?" and a strictly separate check for "does this factual claim (a quote, a prior statement) attribute to the brief text?". Switching the guardrail classifier to a slightly larger model (e.g., Llama 3 8B) would also dramatically improve instruction-following on negative constraints.
 
 ---
 
@@ -79,6 +86,6 @@
 | Two genuinely different foundation models? | ✅ Groq Llama 3.3 70B vs Gemini 3.5 Flash |
 | Deadlock triggers on infeasible scenario? | ✅ Verified in eval harness |
 | Deadlock does NOT false-trigger on slow-converging? | ✅ ZOPA check prevents it |
-| Guardrail catches deliberate fabrication? | ✅ 4/4 adversarial scenarios in LLM mode |
+| Guardrail catches deliberate fabrication? | ❌ 3/4 adversarial scenarios caught; numeric fabrication slipped (see Failure Log) |
 | Graceful fallback on provider outage? | ✅ FALLBACK MODE banner, audio pauses, transcript continues |
 | Eval numbers are real output of run_eval.py? | ✅ Run `python eval/run_eval.py` to verify |

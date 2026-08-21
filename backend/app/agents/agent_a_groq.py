@@ -87,7 +87,7 @@ async def call_agent_a(
     """
     if groq_client is None:
         import groq as groq_sdk
-        groq_client = groq_sdk.AsyncGroq(api_key=settings.groq_api_key)
+        groq_client = groq_sdk.AsyncGroq(api_key=settings.get_groq_api_key)
 
     system_prompt = AGENT_A_SYSTEM_TEMPLATE.format(
         name=brief.name,
@@ -132,7 +132,7 @@ async def call_agent_a(
             model=settings.groq_model,
             messages=messages,
             response_format={"type": "json_object"},
-            max_tokens=256,
+            max_tokens=512,
             temperature=0.7,
         )
         latency_ms = (time.perf_counter() - t0) * 1000

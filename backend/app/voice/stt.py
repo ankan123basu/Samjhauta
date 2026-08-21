@@ -28,7 +28,7 @@ async def transcribe_audio(audio_bytes: bytes, filename: str = "audio.webm") -> 
 
     try:
         import groq as groq_sdk
-        client = groq_sdk.Groq(api_key=settings.groq_api_key)
+        client = groq_sdk.Groq(api_key=settings.get_groq_api_key)
 
         audio_file = io.BytesIO(audio_bytes)
         audio_file.name = filename

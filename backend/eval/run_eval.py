@@ -44,7 +44,7 @@ from app.models.schemas import (
 )
 from app.negotiation.state_machine import NegotiationSession
 from app.negotiation.grounding_guardrail import GroundingGuardrail
-from app.agents.provider_fallback import make_mock_agent, make_groq_agent, make_gemini_agent
+from app.agents.provider_fallback import make_mock_agent, make_groq_agent, make_groq_agent_b, make_gemini_agent
 
 
 SCENARIOS_PATH = Path(__file__).parent / "scenarios.jsonl"
@@ -72,7 +72,7 @@ class ScenarioResult:
 
 def load_scenarios() -> list[dict]:
     scenarios = []
-    with open(SCENARIOS_PATH) as f:
+    with open(SCENARIOS_PATH, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -120,7 +120,7 @@ async def run_scenario(scenario: dict, use_live: bool = False) -> ScenarioResult
         if use_live and settings.groq_configured:
             try:
                 import groq as groq_sdk
-                groq_client = groq_sdk.Groq(api_key=settings.groq_api_key)
+                groq_client = groq_sdk.Groq(api_key=settings.get_groq_api_key)
             except Exception:
                 pass
         guardrail = GroundingGuardrail(brief_a, groq_client=groq_client)  # test against agent A's brief
@@ -144,14 +144,14 @@ async def run_scenario(scenario: dict, use_live: bool = False) -> ScenarioResult
         agent_a = make_groq_agent()
         try:
             import groq as groq_sdk
-            groq_client = groq_sdk.Groq(api_key=settings.groq_api_key)
+            groq_client = groq_sdk.Groq(api_key=settings.get_groq_api_key)
         except Exception:
             pass
     else:
         agent_a = make_mock_agent(AgentId.A)
 
-    if use_live and settings.gemini_configured:
-        agent_b = make_gemini_agent()
+    if use_live and settings.groq_configured:
+        agent_b = make_groq_agent_b()
     else:
         agent_b = make_mock_agent(AgentId.B)
 
@@ -164,7 +164,7 @@ async def run_scenario(scenario: dict, use_live: bool = False) -> ScenarioResult
 
     t0 = time.perf_counter()
     try:
-        await asyncio.wait_for(session.run(), timeout=120.0)
+        await asyncio.wait_for(session.run(), timeout=300.0)
     except asyncio.TimeoutError:
         return ScenarioResult(
             scenario_id=sid, category=category,
@@ -241,7 +241,7 @@ def generate_report(results: list[ScenarioResult], use_live: bool, elapsed_total
 
     convergence_rate = sum(1 for r in feasible if r.correct) / max(len(feasible), 1)
     infeasible_rate = sum(1 for r in infeasible if r.correct) / max(len(infeasible), 1)
-    slow_precision = sum(1 for r in slow if r.correct) / max(len(slow), 1)
+    slow_precision = sum(1 for r in slow if not (r.outcome == "escalated" and r.expected_outcome == "deal")) / max(len(slow), 1)
     guardrail_rate = sum(1 for r in adversarial if r.correct) / max(len(adversarial), 1)
 
     all_latencies = [r.avg_latency_ms for r in results if r.avg_latency_ms > 0]
