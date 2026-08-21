@@ -173,6 +173,7 @@ export default function NegotiatePage() {
 
   const submitBargeIn = async (text: string, isLimit = false) => {
     if (!text.trim()) return;
+    cancelSpeech();
     await bargeIn(sessionId, bargeTarget, text, isLimit);
     setBargeText("");
   };

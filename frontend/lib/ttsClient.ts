@@ -36,9 +36,6 @@ export function speak(text: string, hint: VoiceHint, agentId: "A" | "B"): Promis
       resolve();
       return;
     }
-
-    window.speechSynthesis.cancel(); // cancel any ongoing speech
-
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.pitch = hint.pitch;
     utterance.rate = hint.rate;
