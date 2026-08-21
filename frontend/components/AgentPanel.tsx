@@ -34,41 +34,47 @@ export default function AgentPanel({
   turns,
   groundingFlags = [],
 }: AgentPanelProps) {
-  const color = agentId === "A" ? "pink" : "cyan";
+  const isA = agentId === "A";
   const delta = currentOffer != null && previousOffer != null
     ? (currentOffer - previousOffer).toFixed(1)
     : null;
 
   // Fill percentage for floor→ceiling bar
+  const totalRange = Math.abs(ceiling - floor) || 1;
   const fillPct = currentOffer != null
-    ? Math.max(0, Math.min(100, ((currentOffer - floor) / (ceiling - floor)) * 100))
+    ? Math.max(0, Math.min(100, ((currentOffer - Math.min(floor, ceiling)) / totalRange) * 100))
     : 0;
 
   return (
     <div
-      className={`${styles.panel} ${styles[`panel--${color}`]} neo-card neo-card-3d ${
-        isCurrent ? styles["panel--active"] : ""
+      className={`${styles.panel} ${isA ? styles.panelA : styles.panelB} ${
+        isCurrent ? styles.panelActive : ""
       }`}
       id={`agent-panel-${agentId}`}
     >
+      {/* Ambient background glow */}
+      <div className={isA ? styles.panelGlowA : styles.panelGlowB} />
+
       {/* ── Header ── */}
       <div className={styles.panelHeader}>
-        <div className={styles.agentId}>{agentId}</div>
+        <div className={`${styles.agentOrb} ${isA ? styles.agentOrbA : styles.agentOrbB}`}>
+          {agentId}
+        </div>
         <div className={styles.agentMeta}>
           <div className={styles.agentName}>{agentName}</div>
-          <div className={`neo-badge ${agentId === "A" ? "neo-badge--pink" : "neo-badge--cyan"} mono`}>
+          <div className={`${styles.modelBadge} ${isA ? styles.badgeA : styles.badgeB}`}>
             {modelName}
           </div>
         </div>
         <div className={styles.indicators}>
           {isCurrent && (
-            <div className={`neo-badge neo-badge--yellow animate-pulse-border`}>
-              ● THINKING
+            <div className={styles.thinkingPill}>
+              <span className={styles.pulseDotAmber} /> THINKING
             </div>
           )}
           {isSpeaking && (
-            <div className={`neo-badge neo-badge--green`}>
-              🔊 SPEAKING
+            <div className={styles.speakingPill}>
+              <span className={styles.pulseDotGreen} /> 🔊 SPEAKING
             </div>
           )}
         </div>
@@ -77,7 +83,7 @@ export default function AgentPanel({
       {/* ── Current offer ── */}
       <div className={styles.offerBlock}>
         <div className={styles.offerLabel}>CURRENT OFFER</div>
-        <div className={styles.offerValue}>
+        <div className={`${styles.offerValue} ${isA ? styles.offerValueA : styles.offerValueB}`}>
           {currentOffer != null ? (
             <>
               {currentOffer}
@@ -88,49 +94,53 @@ export default function AgentPanel({
           )}
         </div>
         {delta && (
-          <div className={`${styles.delta} ${Number(delta) > 0 ? styles.deltaUp : styles.deltaDown}`}>
-            {Number(delta) > 0 ? "▲" : "▼"} {Math.abs(Number(delta))}{unitLabel} concession
+          <div className={`${styles.deltaPill} ${Number(delta) !== 0 ? styles.deltaConcession : styles.deltaHold}`}>
+            {Number(delta) < 0 ? "▼" : Number(delta) > 0 ? "▲" : "—"}{" "}
+            {Math.abs(Number(delta))}{unitLabel} {Number(delta) !== 0 ? "concession" : "hold"}
           </div>
         )}
       </div>
 
-      {/* ── Range bar ── */}
-      <div className={styles.rangeBar}>
-        <span className={styles.rangeLabel}>Floor {floor}{unitLabel}</span>
+      {/* ── Floor / Ceiling Range Bar ── */}
+      <div className={styles.rangeBarContainer}>
+        <div className={styles.rangeLabels}>
+          <span>Floor {floor}{unitLabel}</span>
+          <span>Ceiling {ceiling}{unitLabel}</span>
+        </div>
         <div className={styles.rangeTrack}>
           <div
-            className={`${styles.rangeFill} ${styles[`rangeFill--${color}`]}`}
+            className={`${styles.rangeFill} ${isA ? styles.rangeFillA : styles.rangeFillB}`}
             style={{ width: `${fillPct}%` }}
           />
           <div
-            className={styles.rangeMarker}
+            className={`${styles.rangeMarker} ${isA ? styles.markerA : styles.markerB}`}
             style={{ left: `${fillPct}%` }}
           />
         </div>
-        <span className={styles.rangeLabel}>Ceiling {ceiling}{unitLabel}</span>
       </div>
 
-      {/* ── Last message ── */}
+      {/* ── Speech / Justification Message ── */}
       <div className={styles.messageBlock}>
+        <div className={styles.messageLabel}>Latest Position Justification</div>
         {lastMessage ? (
-          <p className={styles.message}>&ldquo;{lastMessage}&rdquo;</p>
+          <p className={styles.messageText}>&ldquo;{lastMessage}&rdquo;</p>
         ) : (
-          <p className={styles.messagePlaceholder}>Waiting to speak…</p>
+          <p className={styles.messagePlaceholder}>Waiting to take negotiation turn…</p>
         )}
       </div>
 
       {/* ── Grounding warning ── */}
       {groundingFlags.length > 0 && (
         <div className={styles.groundingWarning}>
-          ⚠️ Grounding correction applied
+          🛡️ Grounding Correction: Brief constraint enforced
         </div>
       )}
 
-      {/* ── Turn count ── */}
-      <div className={styles.turnCount}>
-        <span className="mono" style={{ fontSize: "0.72rem", opacity: 0.6 }}>
+      {/* ── Turn Telemetry ── */}
+      <div className={styles.turnFooter}>
+        <span className={styles.turnCount}>
           {turns.length} turn{turns.length !== 1 ? "s" : ""} ·{" "}
-          {turns.filter((t) => !t.is_stall).length} real concessions
+          {turns.filter((t) => !t.is_stall).length} active concessions
         </span>
       </div>
     </div>
