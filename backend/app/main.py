@@ -12,7 +12,7 @@ setup_logging()
 
 app = FastAPI(
     title="Samjhauta — AI Negotiation Engine",
-    description="Two AI agents negotiate on behalf of two humans. Dual-provider: Groq Llama 3.3 70B × Google Gemini 3.5 Flash.",
+    description="Two AI agents negotiate on behalf of two humans. Dual-provider: Groq Llama 3.3 70B Versatile × Google Gemini 2.5 Flash.",
     version="1.0.0",
 )
 
@@ -43,8 +43,8 @@ async def root():
         "name": "Samjhauta",
         "tagline": "Two AI agents. One dispute. Zero fake agreements.",
         "providers": {
-            "agent_a": f"Groq {settings.groq_model}",
-            "agent_b": f"Google {settings.gemini_model}",
+            "agent_a": "Groq Llama 3.3 70B Versatile",
+            "agent_b": "Google Gemini 2.5 Flash",
         },
         "groq_configured": settings.groq_configured,
         "gemini_configured": settings.gemini_configured,

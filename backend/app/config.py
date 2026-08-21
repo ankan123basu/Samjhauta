@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     deadlock_window: int = 5          # sliding window size for deadlock detector
     convergence_threshold: float = 0.5  # minimum per-turn delta to count as "moving"
     min_concession_delta: float = 0.5   # stall detection threshold
+    turn_delay_seconds: float = 4.0     # natural pacing between turns for audio/reading (gTTS playback)
 
     # ── Rate limit awareness (informational — not enforced, just logged) ───────
     groq_rpm_limit: int = 30

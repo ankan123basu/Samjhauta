@@ -2,13 +2,14 @@
  * Samjhauta — STT Client (human barge-in)
  * Primary: Groq Whisper via backend /api/voice/transcribe
  * Fallback: browser SpeechRecognition API (works offline, no key)
+ * Supports all major Indic and world languages (Hindi, Bengali, Tamil, etc.)
  */
 
 import { transcribeAudio } from "./apiClient";
 
 export type STTMode = "groq" | "browser" | "unavailable";
 
-// ── Type declarations for browser SpeechRecognition (not always in tsconfig lib) ─
+// ── Type declarations for browser SpeechRecognition ──────────────────────────
 
 type SREvent = Event & {
   results: { [index: number]: { [index: number]: { transcript: string } } };
@@ -32,7 +33,7 @@ type SRConstructor = new () => SRInstance;
 
 let recognition: SRInstance | null = null;
 
-function getBrowserSR(): SRInstance | null {
+function getBrowserSR(lang: string = "en-US"): SRInstance | null {
   if (typeof window === "undefined") return null;
   const win = window as unknown as {
     SpeechRecognition?: SRConstructor;
@@ -43,7 +44,7 @@ function getBrowserSR(): SRInstance | null {
   const r = new SR();
   r.continuous = false;
   r.interimResults = false;
-  r.lang = "en-US";
+  r.lang = lang;
   return r;
 }
 
@@ -67,7 +68,10 @@ export async function startRecording(): Promise<void> {
   mediaRecorder.start();
 }
 
-export async function stopRecordingAndTranscribe(sessionId: string): Promise<string> {
+export async function stopRecordingAndTranscribe(
+  sessionId: string,
+  language?: string
+): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!mediaRecorder) {
       reject(new Error("No active recording"));
@@ -77,7 +81,7 @@ export async function stopRecordingAndTranscribe(sessionId: string): Promise<str
     mediaRecorder.onstop = async () => {
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
       try {
-        const text = await transcribeAudio(audioBlob, sessionId);
+        const text = await transcribeAudio(audioBlob, sessionId, language);
         resolve(text);
       } catch {
         resolve(""); // Fallback: empty string, caller uses browser SR
@@ -98,9 +102,10 @@ export function isRecording(): boolean {
 
 export function startBrowserFallback(
   onResult: (text: string) => void,
-  onError: (err: string) => void
+  onError: (err: string) => void,
+  language: string = "en-US"
 ): void {
-  recognition = getBrowserSR();
+  recognition = getBrowserSR(language);
   if (!recognition) {
     onError("Speech recognition not available in this browser.");
     return;

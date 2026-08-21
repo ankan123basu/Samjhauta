@@ -13,7 +13,7 @@
 </h1>
 
 <h3 align="center">
-  <em>Where Two AIs Negotiate So Two Humans Don't Have To</em>
+  <em>Where Two AI-AGENTS/MODELS Negotiate So Two Humans Don't Have To</em>
 </h3>
 
 <p align="center">
@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <strong>Agent A</strong> → <code>GPT-OSS 120B</code> on Groq &nbsp;⚔️&nbsp; <strong>Agent B</strong> → <code>GPT-OSS 20B</code> on Groq
+  <strong>Agent A</strong> → <code>GPT-OSS 120B</code> on Groq &nbsp;⚔️&nbsp; <strong>Agent B</strong> → <code>GEMINI-FLASH</code> on Gemini
 </p>
 
 <p align="center">

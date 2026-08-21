@@ -16,6 +16,7 @@ export interface Brief {
   private_context: string;
   dispute_topic: string;
   unit_label: string;
+  language?: string;
 }
 
 export interface NegotiationTurn {
@@ -67,14 +68,41 @@ export async function bargeIn(
   });
 }
 
-export async function transcribeAudio(audioBlob: Blob, sessionId: string): Promise<string> {
+export async function transcribeAudio(
+  audioBlob: Blob,
+  sessionId: string,
+  language?: string
+): Promise<string> {
   const form = new FormData();
   form.append("audio", audioBlob, "audio.webm");
   form.append("session_id", sessionId);
+  if (language && language !== "auto") {
+    form.append("language", language);
+  }
   const res = await fetch(`${API_BASE}/api/voice/transcribe`, { method: "POST", body: form });
   if (!res.ok) throw new Error("Transcription failed");
   const data = await res.json();
   return data.text;
+}
+
+export async function translateText(
+  text: string,
+  targetLang: string,
+  sourceLang?: string
+): Promise<string> {
+  if (!text.trim() || targetLang.toLowerCase() === "original") return text;
+  const res = await fetch(`${API_BASE}/api/voice/translate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text,
+      target_lang: targetLang,
+      source_lang: sourceLang,
+    }),
+  });
+  if (!res.ok) return text;
+  const data = await res.json();
+  return data.translated || text;
 }
 
 export function createWebSocket(sessionId: string): WebSocket {

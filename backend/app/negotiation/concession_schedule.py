@@ -92,7 +92,7 @@ class ConcessionSchedule:
         if self.t_max == 0:
             return 0.0
         ratio = min(t / self.t_max, 1.0)
-        return 1.0 - math.pow(ratio, 1.0 / self.beta)
+        return 1.0 - math.pow(ratio, self.beta)
 
     def target_offer_at(self, t: int) -> float:
         """
