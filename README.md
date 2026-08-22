@@ -25,6 +25,15 @@
 <p align="center">
   <strong>Agent A</strong> → <code>GPT-OSS 120B</code> on Groq &nbsp;⚔️&nbsp; <strong>Agent B</strong> → <code>GEMINI-FLASH</code> on Gemini
 </p>
+<img width="1919" height="966" alt="Screenshot 2026-08-22 112950" src="https://github.com/user-attachments/assets/933ec38c-6043-4644-85c7-61fc135a4552" />
+<img width="1918" height="968" alt="Screenshot 2026-08-22 113121" src="https://github.com/user-attachments/assets/e825f16d-d2ed-40b8-bde5-c44727de4e3c" />
+<img width="1919" height="966" alt="Screenshot 2026-08-22 113133" src="https://github.com/user-attachments/assets/f956ccb8-67f3-4d20-a789-18f59c330466" />
+<img width="1919" height="970" alt="Screenshot 2026-08-22 113042" src="https://github.com/user-attachments/assets/68c928b5-e83d-4562-a363-a496b278967d" />
+<img width="1919" height="971" alt="Screenshot 2026-08-22 113221" src="https://github.com/user-attachments/assets/c7f1551d-810e-4f96-8cfa-d8e1516741fa" />
+<img width="1919" height="917" alt="Screenshot 2026-08-21 192732" src="https://github.com/user-attachments/assets/16d8758a-0aeb-4403-a3f2-82f1087d4db1" />
+<img width="1919" height="963" alt="Screenshot 2026-08-22 113605" src="https://github.com/user-attachments/assets/f55b998c-ded2-41a7-a90e-5c4cb915f614" />
+<img width="1425" height="550" alt="Screenshot 2026-08-22 113247" src="https://github.com/user-attachments/assets/37013f08-03c0-439e-a44d-fa9b1687270e" />
+
 
 <p align="center">
   <a href="#-quick-start">Quick Start</a> •
