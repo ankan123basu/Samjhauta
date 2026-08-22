@@ -56,6 +56,7 @@ interface ScenarioTemplate {
   name: string;
   desc: string;
   pill: string;
+  summaryText: string;
   briefA: BriefForm;
   briefB: BriefForm;
 }
@@ -67,6 +68,7 @@ const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
     name: "Flatmate Bill Split",
     desc: "Washing machine broke. Who pays how much?",
     pill: "% of cost",
+    summaryText: "Two flatmates. A broken washing machine. One thinks it's 50/50. The other thinks whoever was using it when it broke should pay more.",
     briefA: { ...defaultBriefA },
     briefB: { ...defaultBriefB },
   },
@@ -76,6 +78,7 @@ const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
     name: "Salary Negotiation",
     desc: "Senior developer annual salary review with the hiring manager.",
     pill: "K USD",
+    summaryText: "Senior Software Engineer & Hiring Manager. Candidate has a competing 155K offer; Manager has a 170K maximum approved budget.",
     briefA: {
       name: "Sarah (Candidate)",
       initial_position: 160,
@@ -107,6 +110,7 @@ const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
     name: "Startup Equity Split",
     desc: "Two co-founders dividing equity before their seed round.",
     pill: "% equity",
+    summaryText: "Technical & Business Co-Founders. Technical founder built full MVP solo; Business founder secured $500K Seed commitment.",
     briefA: {
       name: "Alex (Technical Co-founder)",
       initial_position: 55,
@@ -138,6 +142,7 @@ const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
     name: "Rental Deposit Dispute",
     desc: "Tenant wants full security deposit back. Landlord disagrees.",
     pill: "₹ amount",
+    summaryText: "Tenant & Landlord. Tenant wants full ₹50,000 security deposit back; Landlord cites ₹20,000 repair & repainting costs.",
     briefA: {
       name: "Ravi (Tenant)",
       initial_position: 45000,
@@ -169,6 +174,7 @@ const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
     name: "Vendor Contract",
     desc: "Renegotiating an annual SaaS vendor contract at renewal.",
     pill: "$/month",
+    summaryText: "Procurement Lead & SaaS Account Executive. Client wants to cut 12K/mo contract to 8K/mo; Vendor offers volume discounts to retain account.",
     briefA: {
       name: "Priya (Procurement Lead)",
       initial_position: 8000,
@@ -632,6 +638,7 @@ export default function SetupPage() {
   const [activeTemplate, setActiveTemplate] = useState<string>("flatmate");
 
   const globalI18n = SETUP_LOCALIZATIONS[globalLang] || SETUP_LOCALIZATIONS["en"];
+  const currentScenario = SCENARIO_TEMPLATES.find((t) => t.id === activeTemplate) || SCENARIO_TEMPLATES[0];
 
   // Handle template selection
   const handleSelectTemplate = (template: ScenarioTemplate) => {
@@ -742,9 +749,9 @@ export default function SetupPage() {
 
         {/* Scenario Glass Pill Callout */}
         <div className={styles.scenarioBox}>
-          <span className={styles.scenarioEmoji}>🏠</span>
+          <span className={styles.scenarioEmoji}>{currentScenario.emoji}</span>
           <div>
-            <strong>{globalI18n.scenarioTitle}</strong> {globalI18n.scenarioText}
+            <strong>Active Scenario ({currentScenario.name}):</strong> {currentScenario.summaryText}
           </div>
         </div>
 
@@ -785,7 +792,7 @@ export default function SetupPage() {
         {/* ── Scenario Template Picker ── */}
         <div className={styles.templateSection}>
           <div className={styles.templateSectionTitle}>
-            <span>🎯</span> Quick-Start Scenarios — same engine, different domains
+            QUICK-START SCENARIOS — SAME ENGINE, DIFFERENT DOMAINS
           </div>
           <div className={styles.templateRow}>
             {SCENARIO_TEMPLATES.map((t) => (
