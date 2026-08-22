@@ -324,14 +324,17 @@ function ScrollHero() {
 
         {/* Centered Hero Content (Clean Direct Presentation) */}
         <div ref={contentRef} className="hero-content">
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 16px", borderRadius: 999, background: "rgba(0, 255, 255, 0.08)", border: "1px solid rgba(0, 255, 255, 0.3)", color: "#00FFFF", fontSize: "0.78rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 48, marginBottom: 20, boxShadow: "0 0 20px rgba(0, 255, 255, 0.15)" }}>
+            ⚡ TWO AI AGENTS · ONE DEAL · ZERO EXCUSES
+          </div>
+
           <h1 className="hero-h1">
-            Two AI Agents. <span className="hero-grad-text">One Deal.</span>
-            <br />Zero Excuses.
+            Where Two AI Agents Negotiate <br />
+            <span className="hero-grad-text">So Two Humans Don't Have To</span>
           </h1>
 
           <p className="hero-subtext">
-            Witness Groq Llama 3.3 and Google Gemini 2.0 negotiate an autonomous settlement
-            with live voice barge-in, while you hold the kill switch.
+            Brief your loyal AI agent in private. Watch Groq Llama 3.3 & Google Gemini Flash negotiate a fair settlement out loud — with live voice barge-in, strict hallucination guardrails, and total human control.
           </p>
 
           <div className="hero-actions">
