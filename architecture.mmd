@@ -1,53 +1,47 @@
-%% =============================================================================
-%% Samjhauta — Architecture Diagrams Master File
-%% Contains all 10 system diagrams from the official README specification.
-%% =============================================================================
-
-%% 1. High-Level System Architecture
 graph TB
-    subgraph "👤 Human A"
+    subgraph HA_BOX["Human A"]
         HA[Browser Client A]
     end
 
-    subgraph "👤 Human B"
+    subgraph HB_BOX["Human B"]
         HB[Browser Client B]
     end
 
-    subgraph "🖥️ Frontend — Next.js 16"
+    subgraph FE_BOX["Frontend — Next.js 16"]
         LP[Landing Page<br/>MoltenMetal WebGL]
         SP[Setup Page<br/>Dual Brief Forms]
         NP[Negotiation Arena<br/>OfferCurve + AgentPanels]
     end
 
-    subgraph "⚙️ Backend — FastAPI"
+    subgraph BE_BOX["Backend — FastAPI"]
         direction TB
         API[REST API + WebSocket Gateway]
 
-        subgraph "🧠 Negotiation Engine"
+        subgraph ENG_BOX["Negotiation Engine"]
             SM[State Machine<br/>FSM Controller]
-            CS[Concession Schedule<br/>Boulware-Conceder α]
+            CS[Concession Schedule<br/>Boulware-Conceder]
             DD[Deadlock Detector<br/>Sliding Window + ZOPA]
             GG[Grounding Guardrail<br/>Claim Extraction + Verification]
         end
 
-        subgraph "🤖 Agent Layer"
+        subgraph AGENT_BOX["Agent Layer"]
             AA["Agent A<br/>GPT-OSS 120B (Groq)"]
             AB["Agent B<br/>GPT-OSS 20B (Groq)"]
             PF[Provider Fallback<br/>Mock Agent Chain]
         end
 
-        subgraph "🎙️ Voice Pipeline"
+        subgraph VOICE_BOX["Voice Pipeline"]
             STT[Whisper STT<br/>Groq-hosted]
             TTS[Browser TTS<br/>Web Speech API]
         end
 
-        subgraph "📊 Observability"
+        subgraph OBS_BOX["Observability"]
             LOG[Structured Logging<br/>structlog]
             MET[Metrics Endpoint<br/>/api/metrics]
         end
     end
 
-    subgraph "☁️ External Providers"
+    subgraph EXT_BOX["External Providers"]
         GROQ[Groq Cloud<br/>LPU Inference]
     end
 
@@ -80,214 +74,3 @@ graph TB
     class AA,AB,PF agent
     class LP,SP,NP frontend
     class GROQ external
-
-%% 2. Component Interaction Sequence
-sequenceDiagram
-    participant HA as 👤 Human A
-    participant HB as 👤 Human B
-    participant FE as 🖥️ Frontend
-    participant API as ⚙️ REST API
-    participant WS as 🔌 WebSocket
-    participant SM as 🧠 State Machine
-    participant AgA as 🤖 Agent A (GPT-OSS 120B)
-    participant AgB as 🤖 Agent B (GPT-OSS 20B)
-    participant GG as 🛡️ Guardrail
-    participant DD as 🔍 Deadlock Detector
-
-    Note over HA,HB: Phase 1 — Briefing
-    HA->>FE: Enter private brief (position, floor, ceiling, reasoning)
-    HB->>FE: Enter private brief (position, floor, ceiling, reasoning)
-    FE->>API: POST /api/negotiate/start {brief_a, brief_b}
-    API->>SM: Create session → BRIEFING → NEGOTIATING
-    API-->>FE: {session_id, ws_url}
-
-    Note over HA,DD: Phase 2 — Negotiation Loop
-    FE->>WS: Connect ws://host/ws/negotiate/{session_id}
-
-    loop Each Turn (max 20)
-        SM->>AgA: Generate turn (context + brief + history)
-        AgA-->>SM: {offer: 35.0, message: "I think 35% is fair..."}
-        SM->>GG: Validate claims against Brief A
-        alt Claims grounded
-            GG-->>SM: ✅ PASS
-        else Hallucination detected
-            GG-->>SM: ❌ REJECT → regenerate with correction
-            SM->>AgA: Regenerate (up to 3 attempts)
-        end
-        SM->>DD: Check deadlock (sliding window + ZOPA)
-        DD-->>SM: {is_deadlocked: false}
-        SM->>WS: Emit turn_complete event
-        WS-->>FE: Real-time turn update
-
-        SM->>AgB: Generate turn (context + brief + history)
-        AgB-->>SM: {offer: 55.0, message: "I understand, but..."}
-        SM->>GG: Validate claims against Brief B
-        SM->>DD: Check deadlock
-        SM->>WS: Emit turn_complete event
-    end
-
-    Note over SM: Deal Detection: |offer_A - offer_B| ≤ 1.0
-    SM->>WS: Emit deal_reached {value: midpoint}
-    WS-->>FE: 🎉 Display deal
-
-    Note over HA,DD: Optional — Human Barge-In
-    HA->>FE: Voice input (microphone)
-    FE->>API: POST /api/voice/stt (audio blob)
-    API-->>FE: {text: "No, my limit is 40%"}
-    FE->>WS: barge_in {agent_id: A, text: "...", is_hard_limit: true}
-    SM->>SM: Update floor/ceiling via ConcessionSchedule.hard_limit_override()
-
-%% 3. Data Flow
-flowchart LR
-    subgraph Input
-        B1[Brief A<br/>position: 30<br/>floor: 20<br/>ceiling: 50]
-        B2[Brief B<br/>position: 70<br/>floor: 50<br/>ceiling: 80]
-    end
-
-    subgraph Processing
-        CS[Concession<br/>Schedule]
-        LLM[LLM Turn<br/>Generation]
-        GG[Grounding<br/>Guardrail]
-        DD[Deadlock<br/>Detector]
-    end
-
-    subgraph Output
-        T[Live Transcript]
-        OC[Offer Curve<br/>Visualization]
-        D[Deal / Deadlock<br/>/ Escalation]
-    end
-
-    B1 --> CS
-    B2 --> CS
-    CS --> LLM
-    LLM --> GG
-    GG -->|Pass| DD
-    GG -->|Fail| LLM
-    DD -->|Continue| T
-    DD -->|Deadlocked| D
-    T --> OC
-    DD -->|Deal| D
-
-%% 4. Provider Fallback Chain
-flowchart TD
-    START[Agent Turn Requested] --> CHECK_A{Agent A?}
-
-    CHECK_A -->|Yes| GROQ_120[Try GPT-OSS 120B<br/>on Groq]
-    CHECK_A -->|No| CHECK_B{Agent B?}
-
-    CHECK_B -->|Yes| GROQ_20[Try GPT-OSS 20B<br/>on Groq]
-
-    GROQ_120 -->|✅ Success| RETURN[Return Turn]
-    GROQ_120 -->|❌ 429 Rate Limit| FALLBACK_A[PAUSED_FALLBACK Mode]
-    GROQ_120 -->|❌ Connection Error| FALLBACK_A
-
-    GROQ_20 -->|✅ Success| RETURN
-    GROQ_20 -->|❌ 429 Rate Limit| FALLBACK_B[PAUSED_FALLBACK Mode]
-    GROQ_20 -->|❌ Connection Error| FALLBACK_B
-
-    FALLBACK_A -->|No provider available| MOCK_A[Mock Agent A<br/>Deterministic concessions]
-    FALLBACK_B -->|No provider available| MOCK_B[Mock Agent B<br/>Deterministic concessions]
-
-    MOCK_A --> RETURN
-    MOCK_B --> RETURN
-
-    style FALLBACK_A fill:#e94560,stroke:#333,color:#fff
-    style FALLBACK_B fill:#e94560,stroke:#333,color:#fff
-    style MOCK_A fill:#f5a623,stroke:#333,color:#000
-    style MOCK_B fill:#f5a623,stroke:#333,color:#000
-    style RETURN fill:#27ae60,stroke:#333,color:#fff
-
-%% 5. Finite State Machine
-stateDiagram-v2
-    [*] --> BRIEFING: Session created
-
-    BRIEFING --> NEGOTIATING: Both briefs received<br/>session.start()
-
-    NEGOTIATING --> NEGOTIATING: Normal turn completion
-    NEGOTIATING --> DEAL_REACHED: Offers converge<br/>|A - B| ≤ DEAL_TOLERANCE
-    NEGOTIATING --> DEADLOCKED: Deadlock detector fires<br/>both flat + ZOPA empty
-    NEGOTIATING --> ESCALATED: Human barge-in<br/>is_hard_limit makes ZOPA impossible
-    NEGOTIATING --> PAUSED_FALLBACK: Provider rate-limited<br/>or unreachable
-
-    PAUSED_FALLBACK --> NEGOTIATING: Provider recovers<br/>or human resumes in text mode
-
-    DEAL_REACHED --> [*]
-    DEADLOCKED --> [*]
-    ESCALATED --> [*]
-
-%% 6. Concession Curves by Strategy
-xychart-beta
-    title "Concession Curves by Strategy (β parameter)"
-    x-axis "Turn Number" [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-    y-axis "Concession α (1.0 = ceiling, 0.0 = floor)" 0 --> 1
-    line "Boulware (β=3)" [0.98, 0.96, 0.94, 0.91, 0.88, 0.85, 0.81, 0.77, 0.72, 0.67, 0.61, 0.55, 0.48, 0.41, 0.33, 0.25, 0.17, 0.10, 0.04, 0.00]
-    line "Linear (β=1)" [0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0.10, 0.05, 0.00]
-    line "Conceder (β=0.5)" [0.78, 0.68, 0.60, 0.53, 0.47, 0.42, 0.37, 0.33, 0.29, 0.25, 0.22, 0.19, 0.16, 0.13, 0.11, 0.08, 0.06, 0.04, 0.02, 0.00]
-
-%% 7. Deadlock Detection Algorithm
-flowchart TD
-    T[Turn Completed] --> C1{Condition 1<br/>mean of abs deltas A<br/>over last N turns<br/>< THRESHOLD?}
-    C1 -->|No| SAFE[✅ Still Converging]
-    C1 -->|Yes| C2{Condition 2<br/>mean of abs deltas B<br/>over last N turns<br/>< THRESHOLD?}
-    C2 -->|No| SAFE
-    C2 -->|Yes| C3{Condition 3<br/>ZOPA is empty?<br/>floor_A > ceiling_B OR<br/>floor_B > ceiling_A}
-    C3 -->|No| SAFE
-    C3 -->|Yes| DEAD[🔴 DEADLOCKED]
-
-    style DEAD fill:#e94560,stroke:#333,color:#fff
-    style SAFE fill:#27ae60,stroke:#333,color:#fff
-
-%% 8. Grounding Guardrail Sequence
-flowchart TD
-    TURN[Agent produces turn] --> EXTRACT[Step 1: Claim Extraction<br/>Secondary LLM call<br/>allam-2-7b]
-    EXTRACT --> CLAIMS{Any factual<br/>claims found?}
-    CLAIMS -->|No claims| PASS[✅ PASS — Accept turn]
-    CLAIMS -->|Claims found| REGEX[Step 2a: Regex Pre-Filter<br/>Skip harmless claims]
-    REGEX --> DEEP{Needs deep<br/>validation?}
-    DEEP -->|No| PASS
-    DEEP -->|Yes| LLM_CHECK[Step 2b: LLM Grounding Classifier<br/>Check each claim vs HumanBrief]
-    LLM_CHECK --> VERDICT{All claims<br/>grounded?}
-    VERDICT -->|Yes| PASS
-    VERDICT -->|No| REJECT[❌ REJECT turn]
-    REJECT --> REGEN{Attempts<br/>< 3?}
-    REGEN -->|Yes| REGENERATE[Regenerate with<br/>correction prompt]
-    REGENERATE --> TURN
-    REGEN -->|No| FORCE_PASS[⚠️ Force pass<br/>with warning log]
-
-    style PASS fill:#27ae60,stroke:#333,color:#fff
-    style REJECT fill:#e94560,stroke:#333,color:#fff
-    style FORCE_PASS fill:#f5a623,stroke:#333,color:#000
-
-%% 9. Human Barge-In Sequence
-sequenceDiagram
-    participant H as 👤 Human
-    participant MIC as 🎙️ Microphone
-    participant STT as Whisper STT (Groq)
-    participant SM as State Machine
-    participant CS as Concession Schedule
-
-    H->>MIC: Press & hold barge-in button
-    MIC->>STT: Audio blob (WebM/Opus)
-    STT-->>SM: {text: "My absolute limit is 40%", is_hard_limit: true}
-
-    alt is_hard_limit = true
-        SM->>CS: hard_limit_override(new_floor=40)
-        CS-->>SM: Updated floor/ceiling
-        SM->>SM: Check if ZOPA still exists
-        alt ZOPA still exists
-            SM->>SM: Inject text into next agent context
-        else ZOPA impossible
-            SM->>SM: Transition → ESCALATED
-        end
-    else is_hard_limit = false
-        SM->>SM: Inject as context (no constraint change)
-    end
-
-%% 10. Voice Pipeline Flow
-flowchart LR
-    MIC[🎙️ Microphone] -->|MediaRecorder<br/>WebM/Opus| BLOB[Audio Blob]
-    BLOB -->|POST /api/voice/stt| WHISPER[Whisper STT<br/>on Groq LPU]
-    WHISPER -->|JSON| TEXT[Transcribed Text]
-    TEXT -->|Inject into<br/>negotiation context| SM[State Machine]
-    SM -->|turn.message| TTS[Web Speech API<br/>Browser TTS]
-    TTS -->|Audio| SPEAKER[🔊 Speaker]
