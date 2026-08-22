@@ -99,7 +99,7 @@ function Navbar() {
             Try Demo →
           </a>
           <a
-            href="https://github.com"
+            href="https://github.com/ankan123basu/Samjhauta"
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn--sm"
@@ -718,7 +718,7 @@ function MasterFooter() {
             <div className="footer-col-title">Open Source</div>
             <ul className="footer-links">
               <li>
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="footer-link">
+                <a href="https://github.com/ankan123basu/Samjhauta" target="_blank" rel="noopener noreferrer" className="footer-link">
                   <GitHubIcon /> GitHub Repository
                 </a>
               </li>

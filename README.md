@@ -118,6 +118,7 @@ Two flatmates share expenses. Something breaks. Neither wants to have the awkwar
 | **Human Barge-In** | Live voice (Whisper STT) → text → injected into next agent context | No human override |
 | **Graceful Degradation** | Provider fallback chain with visible FALLBACK MODE banner | Crashes on API errors |
 | **Deal Integrity** | Deals only declared when offers converge within tolerance; system never invents agreement | LLM "agrees" in text without numeric convergence |
+| **Scenario-Agnostic Engine** | Same concession curves, guardrails, and deadlock detection work across salary negotiations, rental disputes, equity splits — only the input brief changes. Zero prompt rewrites needed per scenario. | Hardcoded to a single use case |
 
 ---
 
@@ -136,7 +137,7 @@ Two flatmates share expenses. Something breaks. Neither wants to have the awkwar
 
 ```bash
 # Clone and enter the project
-git clone https://github.com/your-org/samjhauta.git
+git clone https://github.com/ankan123basu/Samjhauta.git
 cd samjhauta
 
 # Create and activate virtual environment
@@ -506,6 +507,30 @@ xychart-beta
 - **Monotone clamping** — An agent can never *retract* a concession. Once offered, that position is committed.
 - **Direction detection** — Agent A (wants to pay less) concedes *upward*; Agent B (wants more) concedes *downward*. The schedule auto-detects this from `ceiling` vs `initial_position`.
 - **Hard limit override** — Human barge-in with `is_hard_limit=True` calls `ConcessionSchedule.hard_limit_override()` to rewrite the floor/ceiling mid-negotiation.
+
+### Scenario-Agnostic Architecture
+
+**Why this matters:** The entire negotiation engine — prompts, concession curves, guardrails, deadlock detection — operates on generic `floor` / `ceiling` / `unit_label` / `dispute_topic` parameters. Nothing is hardcoded to a specific dispute type.
+
+The LLM prompt template in [`agent_a_groq.py`](backend/app/agents/agent_a_groq.py) is fully parameterised:
+
+```
+You are a negotiation agent representing {name} in a dispute about: {dispute_topic}.
+- Your opening position: {initial_position}{unit_label}
+- Your floor (minimum acceptable): {floor}{unit_label}
+- Your ceiling (best case): {ceiling}{unit_label}
+```
+
+This means the same engine handles:
+
+| Scenario | `unit_label` | `floor` | `ceiling` | `dispute_topic` |
+|---|---|---|---|---|
+| Flatmate bill split | `%` | 25 | 50 | Washing machine repair cost |
+| Salary negotiation | `K USD` | 120 | 180 | Annual salary review |
+| Startup equity split | `%` | 5 | 25 | Co-founder equity allocation |
+| Rental dispute | `₹` | 2000 | 8000 | Security deposit refund |
+
+The concession schedule, deadlock detector, and grounding guardrail all operate on the same generic `floor`/`ceiling` values regardless of whether they represent percentages, dollars, or equity shares. **Zero code changes required per scenario — only the input brief changes.**
 
 ### Deadlock Detection Algorithm
 

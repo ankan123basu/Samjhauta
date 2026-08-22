@@ -48,6 +48,155 @@ const defaultBriefB: BriefForm = {
   language: "English",
 };
 
+// ── Pre-Built Scenario Templates ──────────────────────────────────────────────
+
+interface ScenarioTemplate {
+  id: string;
+  emoji: string;
+  name: string;
+  desc: string;
+  pill: string;
+  briefA: BriefForm;
+  briefB: BriefForm;
+}
+
+const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
+  {
+    id: "flatmate",
+    emoji: "🏠",
+    name: "Flatmate Bill Split",
+    desc: "Washing machine broke. Who pays how much?",
+    pill: "% of cost",
+    briefA: { ...defaultBriefA },
+    briefB: { ...defaultBriefB },
+  },
+  {
+    id: "salary",
+    emoji: "💼",
+    name: "Salary Negotiation",
+    desc: "Senior developer annual salary review with the hiring manager.",
+    pill: "K USD",
+    briefA: {
+      name: "Sarah (Candidate)",
+      initial_position: 160,
+      floor: 140,
+      ceiling: 200,
+      tone: "assertive",
+      strategy: "boulware",
+      private_context: "I have a competing offer at 155K from another company. My current salary is 145K. I have 7 years of experience and led two critical product launches this year. I know the market rate for my role is 150-175K.",
+      dispute_topic: "Annual salary negotiation for a Senior Software Engineer position",
+      unit_label: "K USD",
+      language: "English",
+    },
+    briefB: {
+      name: "Mark (Hiring Manager)",
+      initial_position: 145,
+      floor: 130,
+      ceiling: 170,
+      tone: "cooperative",
+      strategy: "conceder",
+      private_context: "Budget approved up to 170K for this role but I'd prefer to stay under 155K. Sarah is a top performer we can't afford to lose. The team is already short-staffed and replacing her would cost us 3+ months of lost productivity.",
+      dispute_topic: "Annual salary negotiation for a Senior Software Engineer position",
+      unit_label: "K USD",
+      language: "English",
+    },
+  },
+  {
+    id: "equity",
+    emoji: "🚀",
+    name: "Startup Equity Split",
+    desc: "Two co-founders dividing equity before their seed round.",
+    pill: "% equity",
+    briefA: {
+      name: "Alex (Technical Co-founder)",
+      initial_position: 55,
+      floor: 45,
+      ceiling: 65,
+      tone: "firm",
+      strategy: "boulware",
+      private_context: "I built the entire MVP solo over 8 months, wrote all the code, and designed the architecture. The product would not exist without my technical work. I also brought in our first 3 paying customers through my network.",
+      dispute_topic: "Co-founder equity split before seed funding round",
+      unit_label: "%",
+      language: "English",
+    },
+    briefB: {
+      name: "Jordan (Business Co-founder)",
+      initial_position: 50,
+      floor: 40,
+      ceiling: 55,
+      tone: "cooperative",
+      strategy: "conceder",
+      private_context: "I secured the $500K seed round commitment, wrote the business plan, handled all investor meetings, and brought in the key enterprise partnership. I also quit my 200K/year job 6 months earlier than Alex to go full-time. Without the funding, the company dies.",
+      dispute_topic: "Co-founder equity split before seed funding round",
+      unit_label: "%",
+      language: "English",
+    },
+  },
+  {
+    id: "rental",
+    emoji: "🏢",
+    name: "Rental Deposit Dispute",
+    desc: "Tenant wants full security deposit back. Landlord disagrees.",
+    pill: "₹ amount",
+    briefA: {
+      name: "Ravi (Tenant)",
+      initial_position: 45000,
+      floor: 35000,
+      ceiling: 50000,
+      tone: "assertive",
+      strategy: "boulware",
+      private_context: "I paid 50,000 rupees as security deposit. The apartment had pre-existing marks when I moved in which were noted in the move-in checklist. I've lived here for 2 years and maintained the place well. The only damage is normal wear and tear.",
+      dispute_topic: "Security deposit refund after end of 2-year rental lease",
+      unit_label: "₹",
+      language: "English",
+    },
+    briefB: {
+      name: "Meena (Landlord)",
+      initial_position: 20000,
+      floor: 15000,
+      ceiling: 40000,
+      tone: "firm",
+      strategy: "boulware",
+      private_context: "The walls need repainting which costs 12,000 rupees. There's a stain on the carpet that needs professional cleaning for 5,000. The bathroom tap is leaking which wasn't reported. Total repair estimate is 18,000-22,000 rupees. I want to keep enough to cover repairs.",
+      dispute_topic: "Security deposit refund after end of 2-year rental lease",
+      unit_label: "₹",
+      language: "English",
+    },
+  },
+  {
+    id: "vendor",
+    emoji: "📦",
+    name: "Vendor Contract",
+    desc: "Renegotiating an annual SaaS vendor contract at renewal.",
+    pill: "$/month",
+    briefA: {
+      name: "Priya (Procurement Lead)",
+      initial_position: 8000,
+      floor: 7000,
+      ceiling: 12000,
+      tone: "assertive",
+      strategy: "boulware",
+      private_context: "Our current contract is $12,000/month which is above market rate. Competitor tools offer similar features at $7,500-9,000/month. We have budget pressure to cut SaaS costs by 20% this quarter. However, switching costs are high — 3 months of migration work.",
+      dispute_topic: "Annual SaaS vendor contract renewal price negotiation",
+      unit_label: "$/mo",
+      language: "English",
+    },
+    briefB: {
+      name: "David (Account Executive)",
+      initial_position: 11500,
+      floor: 8500,
+      ceiling: 12000,
+      tone: "cooperative",
+      strategy: "conceder",
+      private_context: "This client is in our top 50 accounts. Losing them would hurt our Q3 numbers badly. My manager approved discounting up to 25% to retain. I know they're evaluating competitors but switching costs are in our favor. Our new AI features launching next month should justify the price.",
+      dispute_topic: "Annual SaaS vendor contract renewal price negotiation",
+      unit_label: "$/mo",
+      language: "English",
+    },
+  },
+];
+
+
 // ── Custom Glass Dropdown Component ──────────────────────────────────────────
 
 function CustomGlassSelect({
@@ -480,8 +629,16 @@ export default function SetupPage() {
   const [briefB, setBriefB] = useState<BriefForm>(defaultBriefB);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTemplate, setActiveTemplate] = useState<string>("flatmate");
 
   const globalI18n = SETUP_LOCALIZATIONS[globalLang] || SETUP_LOCALIZATIONS["en"];
+
+  // Handle template selection
+  const handleSelectTemplate = (template: ScenarioTemplate) => {
+    setActiveTemplate(template.id);
+    setBriefA({ ...template.briefA });
+    setBriefB({ ...template.briefB });
+  };
 
   // Calculate live ZOPA (Zone of Possible Agreement)
   const minA = Math.min(briefA.floor, briefA.ceiling);
@@ -625,6 +782,30 @@ export default function SetupPage() {
       </header>
 
       <main className={styles.main}>
+        {/* ── Scenario Template Picker ── */}
+        <div className={styles.templateSection}>
+          <div className={styles.templateSectionTitle}>
+            <span>🎯</span> Quick-Start Scenarios — same engine, different domains
+          </div>
+          <div className={styles.templateRow}>
+            {SCENARIO_TEMPLATES.map((t) => (
+              <div
+                key={t.id}
+                className={`${styles.templateCard} ${activeTemplate === t.id ? styles.templateCardActive : ""}`}
+                onClick={() => handleSelectTemplate(t)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && handleSelectTemplate(t)}
+              >
+                <span className={styles.templateEmoji}>{t.emoji}</span>
+                <span className={styles.templateName}>{t.name}</span>
+                <span className={styles.templateDesc}>{t.desc}</span>
+                <span className={styles.templatePill}>{t.pill}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* ── Brief Forms Grid with Live ZOPA Indicator ── */}
         <div className={styles.briefsGrid}>
           <BriefPanel

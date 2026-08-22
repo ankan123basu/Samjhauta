@@ -28,6 +28,7 @@ We built:
 - The **grounding guardrail** — secondary LLM call that extracts factual claims and checks them against the human's verified brief
 - The **human barge-in mechanism** — live voice (Groq Whisper) → text → injection into next agent context
 - The **dual-provider architecture** — two different foundation models from two different providers, not the same model called twice
+- The **scenario-agnostic engine** — every component (concession curves, guardrails, deadlock detection, prompts) operates on parameterised `floor`/`ceiling`/`unit_label`/`dispute_topic` values. The same engine handles salary negotiations, equity splits, rental disputes, and vendor contracts without a single line of code or prompt changed — only the input brief differs
 - The **graceful degradation layer** — visible FALLBACK MODE on provider failure, transcript always on
 
 ---
