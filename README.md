@@ -25,6 +25,19 @@
 <p align="center">
   <strong>Agent A</strong> → <code>GPT-OSS 120B</code> on Groq &nbsp;⚔️&nbsp; <strong>Agent B</strong> → <code>GEMINI-FLASH</code> on Gemini
 </p>
+
+<p align="center">
+  <a href="https://drive.google.com/file/d/1bk2BFtPkN5LuM_Qml8HqmeYa6W9lGNJf/view?usp=sharing">
+    <img src="https://img.shields.io/badge/🎬_Live_Demo_Video-Watch_on_Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white" alt="Live Demo Video" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://samjhauta-vocallabsai.vercel.app/">
+    <img src="https://img.shields.io/badge/🚀_Live_App-samjhauta--vocallabsai.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live App on Vercel" />
+  </a>
+</p>
+
+<br/>
+
 <img width="1919" height="966" alt="Screenshot 2026-08-22 112950" src="https://github.com/user-attachments/assets/933ec38c-6043-4644-85c7-61fc135a4552" />
 <img width="1918" height="968" alt="Screenshot 2026-08-22 113121" src="https://github.com/user-attachments/assets/e825f16d-d2ed-40b8-bde5-c44727de4e3c" />
 <img width="1919" height="966" alt="Screenshot 2026-08-22 113133" src="https://github.com/user-attachments/assets/f956ccb8-67f3-4d20-a789-18f59c330466" />
