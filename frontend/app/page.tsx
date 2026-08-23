@@ -96,7 +96,7 @@ function Navbar() {
 
         <div className="nav-actions">
           <a href="/setup" className="btn btn--sm btn--primary">
-            Try Demo →
+            Launch Arena →
           </a>
           <a
             href="https://github.com/ankan123basu/Samjhauta"
@@ -339,7 +339,7 @@ function ScrollHero() {
 
           <div className="hero-actions">
             <a href="/setup" className="btn btn--lg btn--primary">
-              🤝&nbsp; Launch Live Demo
+              ⚔️&nbsp; Enter the Arena
             </a>
             <a href="#features" className="btn btn--lg">
               Explore Architecture ↓
