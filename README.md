@@ -27,9 +27,11 @@
 </p>
 
 <p align="center">
-  🎬 Live Demo Video - <a href="https://drive.google.com/file/d/1bk2BFtPkN5LuM_Qml8HqmeYa6W9lGNJf/view?usp=sharing">https://drive.google.com/file/d/1bk2BFtPkN5LuM_Qml8HqmeYa6W9lGNJf/view</a>
-  <br/>
-  🚀 Live App - <a href="https://samjhauta-vocallabsai.vercel.app/">https://samjhauta-vocallabsai.vercel.app</a>
+  <strong>🎬 Live Demo Video</strong> &nbsp;—&nbsp; <a href="https://drive.google.com/file/d/1bk2BFtPkN5LuM_Qml8HqmeYa6W9lGNJf/view?usp=sharing">https://drive.google.com/file/d/1bk2BFtPkN5LuM_Qml8HqmeYa6W9lGNJf/view</a>
+</p>
+
+<p align="center">
+  <strong>🚀 Live App</strong> &nbsp;—&nbsp; <a href="https://samjhauta-vocallabsai.vercel.app/">https://samjhauta-vocallabsai.vercel.app</a>
 </p>
 
 
