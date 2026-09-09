@@ -23,7 +23,7 @@
 </p>
 
 <p align="center">
-  <strong>Agent A</strong> → <code>GPT-OSS 120B</code> on Groq &nbsp;⚔️&nbsp; <strong>Agent B</strong> → <code>GEMINI-FLASH</code> on Gemini
+  <strong>Agent A</strong> → <code>GPT-OSS 120B</code> on Groq &nbsp;⚔️&nbsp; <strong>Agent B</strong> → <code>GPT-OSS 20B</code> on Groq
 </p>
 
 <p align="center">
